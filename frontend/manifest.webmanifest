@@ -1,0 +1,9 @@
+{
+  "name": "Trader Discipline Operating System",
+  "short_name": "TDOS",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#0f172a"
+}

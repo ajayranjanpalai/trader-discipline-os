@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f7f7f4">
+  <title>Trader Discipline Operating System</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="loader">
+    <div class="loader-mark">TDOS</div>
+    <div class="loader-track"><span></span></div>
+    <p>Booting discipline engine</p>
+  </div>
+
+  <section id="authScreen" class="auth-screen">
+    <div class="grid-bg"></div>
+    <div class="auth-card">
+      <div class="brand-block">
+        <span class="brand-kicker">Trader Discipline</span>
+        <h1>Operating System</h1>
+        <p>A clean command workspace for trades, risk, habits, expenses, and insight.</p>
+      </div>
+      <div class="auth-tabs">
+        <button class="auth-tab active" data-auth="login">Login</button>
+        <button class="auth-tab" data-auth="signup">Signup</button>
+      </div>
+      <form id="loginForm" class="auth-form active">
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="trader@example.com" required></label>
+        <label>Password<input name="password" type="password" autocomplete="current-password" placeholder="Minimum 6 characters" required></label>
+        <button class="primary-btn" type="submit">Enter Dashboard</button>
+      </form>
+      <form id="signupForm" class="auth-form">
+        <label>Name<input name="name" type="text" autocomplete="name" placeholder="Your trading name" required></label>
+        <label>Email<input name="email" type="email" autocomplete="email" placeholder="trader@example.com" required></label>
+        <label>Password<input name="password" type="password" autocomplete="new-password" placeholder="Minimum 6 characters" required></label>
+        <p id="signupNotice" class="auth-note hidden"></p>
+        <button class="primary-btn" type="submit">Create Account</button>
+      </form>
+    </div>
+  </section>
+
+  <div id="appShell" class="app-shell hidden">
+    <aside class="sidebar">
+      <div class="logo">
+        <strong><i data-lucide="shopping-bag"></i></strong>
+        <span>Discipline OS</span>
+      </div>
+      <nav>
+        <button class="nav-btn active" data-page="dashboard" title="Dashboard"><i data-lucide="layout-dashboard"></i><span>Dashboard</span></button>
+        <button class="nav-btn" data-page="journal" title="Trade Journal"><i data-lucide="candlestick-chart"></i><span>Trade Journal</span></button>
+        <button class="nav-btn" data-page="risk" title="Risk Desk"><i data-lucide="shield-check"></i><span>Risk Desk</span></button>
+        <button class="nav-btn" data-page="analytics" title="Analytics"><i data-lucide="bar-chart-3"></i><span>Analytics</span></button>
+        <button class="nav-btn" data-page="expenses" title="Expenses"><i data-lucide="wallet-cards"></i><span>Expenses</span></button>
+        <button class="nav-btn" data-page="tasks" title="Tasks"><i data-lucide="list-checks"></i><span>Tasks</span></button>
+        <button class="nav-btn" data-page="insights" title="AI Insights"><i data-lucide="sparkles"></i><span>AI Insights</span></button>
+      </nav>
+      <div class="sidebar-user">
+        <div id="avatar" class="avatar">T</div>
+        <div>
+          <strong id="sidebarName">Trader</strong>
+          <span>Workspace</span>
+        </div>
+      </div>
+      <button id="logoutBtn" class="ghost-btn">Logout</button>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button id="menuToggle" class="icon-btn mobile-only" type="button" aria-label="Toggle navigation"><i data-lucide="menu"></i></button>
+        <div>
+          <span class="eyebrow">Trader Discipline Operating System</span>
+          <h2 id="pageTitle">Command Center</h2>
+        </div>
+        <div class="top-actions">
+          <div id="ticker" class="ticker"></div>
+          <div class="discipline-pill">
+            <span>Discipline</span>
+            <strong id="disciplineScore">--</strong>
+          </div>
+        </div>
+      </header>
+
+      <section id="dashboard" class="page active">
+        <div id="disciplineAlert" class="alert"></div>
+        <div class="ops-strip">
+          <div>
+            <span>Today</span>
+            <strong id="todayNet">INR 0</strong>
+          </div>
+          <div>
+            <span>Best Setup</span>
+            <strong id="bestSetup">--</strong>
+          </div>
+          <div>
+            <span>Risk State</span>
+            <strong id="riskState">Clear</strong>
+          </div>
+          <div>
+            <span>Daily Plan</span>
+            <strong id="planState">Not Set</strong>
+          </div>
+        </div>
+        <div class="command-grid">
+          <section class="panel command-panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">Command Briefing</span>
+                <h3>Today's Operating Plan</h3>
+              </div>
+              <button class="mini-btn" data-jump="journal" type="button">Edit Plan</button>
+            </div>
+            <div id="commandBriefing" class="briefing-list"></div>
+          </section>
+          <section class="panel command-panel">
+            <div class="panel-head">
+              <div>
+                <span class="eyebrow">Execution Coach</span>
+                <h3>Quality Score</h3>
+              </div>
+              <strong id="qualityScore" class="quality-score">0%</strong>
+            </div>
+            <div class="quality-meter"><span id="qualityMeter"></span></div>
+            <div id="coachActions" class="coach-actions"></div>
+          </section>
+        </div>
+        <div class="metric-grid">
+          <article class="metric-card"><span>Total P/L</span><strong id="mPnl">0</strong><small>Net journal result</small></article>
+          <article class="metric-card"><span>Win Rate</span><strong id="mWinRate">0%</strong><small>Execution quality</small></article>
+          <article class="metric-card"><span>Trades</span><strong id="mTrades">0</strong><small id="mToday">0 / 2 today</small></article>
+          <article class="metric-card"><span>Playbook Fit</span><strong id="mPlaybookFit">0%</strong><small id="mPlaybookCount">0 tagged trades</small></article>
+        </div>
+        <div class="dashboard-grid">
+          <section class="panel wide">
+            <div class="panel-head"><h3>Equity Curve</h3><span id="quote"></span></div>
+            <div class="chart-box"><canvas id="dashEquityChart"></canvas></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Recent Trades</h3><button class="mini-btn" data-jump="journal">Add Trade</button></div>
+            <div id="recentTrades" class="stack"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Session Review</h3><span id="reviewDate"></span></div>
+            <div id="sessionReview" class="review-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="journal" class="page">
+        <div class="split-grid">
+          <div class="journal-main-column">
+            <form id="tradeForm" class="panel form-panel">
+              <div class="panel-head"><h3 id="tradeFormTitle">New Trade Entry</h3><button type="button" id="cancelEditTrade" class="mini-btn hidden">Cancel Edit</button></div>
+              <div class="template-row">
+                <button class="chip-btn" type="button" data-template-pair="BTC/USDT">BTC</button>
+                <button class="chip-btn" type="button" data-template-pair="ETH">ETH</button>
+                <button class="chip-btn" type="button" data-template-pair="NIFTY">NIFTY</button>
+                <button class="chip-btn" type="button" data-now-time>Now</button>
+              </div>
+              <div class="form-grid">
+                <label>Pair<input name="pair" placeholder="BTC/USDT" required></label>
+                <label>Direction<select name="direction"><option>long</option><option>short</option></select></label>
+                <label>Entry<input name="entry" type="number" step="0.0001" required></label>
+                <label>Exit<input name="exit" type="number" step="0.0001" required></label>
+                <label>Stop Loss<input name="stop_loss" type="number" step="0.0001" required></label>
+                <label>Position Size<input name="position_size" type="number" step="0.01" required></label>
+                <label>P/L (Delta USD)<input name="pnl" type="number" step="0.01" required></label>
+                <label>Brokerage INR<input name="brokerage" type="number" step="0.01" value="0"></label>
+                <label>Risk Reward (Auto)<input name="risk_reward" type="number" step="0.01" required></label>
+                <label>Emotion<select name="emotion"><option>calm</option><option>confident</option><option>neutral</option><option>fomo</option><option>fearful</option><option>greedy</option><option>revenge</option></select></label>
+                <label>Setup Tag<select name="setup_tag" id="setupTag"><option value="">No setup tag</option></select></label>
+                <label>Timestamp<input name="timestamp" type="datetime-local"></label>
+              </div>
+              <label>Trade Reason<input name="trade_reason" placeholder="Breakout, pullback, liquidity sweep..."></label>
+              <label>Notes<textarea name="notes" rows="3" placeholder="Execution notes, mistakes, lessons"></textarea></label>
+              <div class="risk-preview">
+                <span>Position Risk (USD x 85)</span>
+                <strong id="positionRisk">INR 0</strong>
+                <small id="positionRiskText">Entry, stop, and size calculate this automatically.</small>
+              </div>
+              <fieldset class="checklist">
+                <legend>Pre-Trade Checklist</legend>
+                <label><input type="checkbox" data-checklist> Setup matches plan</label>
+                <label><input type="checkbox" data-checklist> Risk is acceptable</label>
+                <label><input type="checkbox" data-checklist> Emotion is stable</label>
+              </fieldset>
+              <button class="primary-btn" type="submit">Log Trade</button>
+            </form>
+            <section class="panel table-panel">
+              <div class="panel-head table-head">
+                <div><h3>Trade History</h3><span id="tradeCountLabel"></span></div>
+                <div class="table-actions">
+                  <input id="tradeSearch" type="search" placeholder="Search pair, reason, notes">
+                  <select id="outcomeFilter"><option value="all">All outcomes</option><option value="win">Wins</option><option value="loss">Losses</option></select>
+                  <select id="emotionFilter"><option value="all">All emotions</option></select>
+                  <button id="exportTrades" class="mini-btn" type="button">Export CSV</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead><tr><th>Time</th><th>Pair</th><th>Setup</th><th>Side</th><th>Entry</th><th>Exit</th><th>Brokerage</th><th>Net P/L INR</th><th>Emotion</th><th></th></tr></thead>
+                  <tbody id="tradeRows"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+          <aside class="panel rules-panel">
+            <h3>Discipline Rules</h3>
+            <div class="rule"><b>Max 2 Trades Per Day</b><span>Prevents overtrading and fatigue decisions.</span></div>
+            <div class="rule"><b>Two Trade Plan</b><span>A second trade is allowed even if the first trade is profitable.</span></div>
+            <div class="rule"><b>Two Losses Lock</b><span>Two losses trigger a hard stop until tomorrow.</span></div>
+            <div class="rule rule-live"><b>Current Status</b><span id="ruleStatus">Waiting for journal data.</span></div>
+            <div class="side-tool">
+              <h3>Daily Plan</h3>
+              <label>Market Bias<select id="planBias"><option>neutral</option><option>bullish</option><option>bearish</option><option>range</option></select></label>
+              <label>Focus Setup<input id="planSetup" placeholder="Breakout, pullback, liquidity"></label>
+              <label>Max Daily Loss<input id="planMaxLoss" type="number" step="0.01" placeholder="Example: 1000"></label>
+              <label>Plan Notes<textarea id="planNotes" rows="3" placeholder="Key levels, invalidation, no-trade conditions"></textarea></label>
+              <button id="savePlan" class="mini-btn" type="button">Save Plan</button>
+            </div>
+            <div class="side-tool">
+              <h3>Position Size</h3>
+              <div class="form-grid compact-fields">
+                <label>Capital<input id="calcCapital" type="number" step="0.01" placeholder="100000"></label>
+                <label>Risk %<input id="calcRiskPct" type="number" step="0.01" placeholder="1"></label>
+                <label>Entry<input id="calcEntry" type="number" step="0.0001"></label>
+                <label>Stop<input id="calcStop" type="number" step="0.0001"></label>
+              </div>
+              <div class="calc-result">
+                <span>Suggested Size</span>
+                <strong id="calcSize">0</strong>
+                <small id="calcRiskAmount">Risk amount INR 0</small>
+              </div>
+              <button id="applyCalcSize" class="mini-btn" type="button">Use Size</button>
+            </div>
+            <div class="side-tool">
+              <div class="panel-head compact-head">
+                <h3>Setup Playbook</h3>
+                <span id="playbookCount">0 active</span>
+              </div>
+              <label>Setup Name<input id="playbookName" placeholder="A+ pullback, opening range"></label>
+              <label>Entry Criteria<textarea id="playbookCriteria" rows="3" placeholder="Market context, trigger, invalidation, management rule"></textarea></label>
+              <button id="addPlaybookSetup" class="mini-btn" type="button">Add Setup</button>
+              <div id="playbookList" class="playbook-list"></div>
+            </div>
+          </aside>
+        </div>
+      </section>
+
+      <section id="analytics" class="page">
+        <div class="metric-grid compact">
+          <article class="metric-card"><span>Avg Profit</span><strong id="aAvgProfit">0</strong></article>
+          <article class="metric-card"><span>Avg Loss</span><strong id="aAvgLoss">0</strong></article>
+          <article class="metric-card"><span>Risk Reward</span><strong id="aRR">0</strong></article>
+          <article class="metric-card"><span>Best Trade</span><strong id="aBest">0</strong></article>
+        </div>
+        <div class="analytics-grid">
+          <section class="panel"><h3>Daily P/L</h3><div class="chart-box"><canvas id="dailyChart"></canvas></div></section>
+          <section class="panel"><h3>Win/Loss</h3><div class="chart-box"><canvas id="winLossChart"></canvas></div></section>
+          <section class="panel"><h3>Emotion vs Performance</h3><div class="chart-box"><canvas id="emotionChart"></canvas></div></section>
+          <section class="panel"><h3>Expense Split</h3><div class="chart-box"><canvas id="expenseChart"></canvas></div></section>
+        </div>
+      </section>
+
+      <section id="risk" class="page">
+        <div class="metric-grid compact">
+          <article class="metric-card"><span>Account Equity</span><strong id="rEquity">0</strong><small id="rEquityText">Capital plus net journal P/L</small></article>
+          <article class="metric-card"><span>Daily Loss Used</span><strong id="rDailyLoss">0%</strong><small id="rDailyLossText">No loss limit set</small></article>
+          <article class="metric-card"><span>Max Drawdown</span><strong id="rDrawdown">0%</strong><small>Peak-to-trough journal drawdown</small></article>
+          <article class="metric-card"><span>Risk Per Trade</span><strong id="rRiskTrade">0%</strong><small>Configured guardrail</small></article>
+        </div>
+        <div class="risk-grid">
+          <form id="riskSettingsForm" class="panel form-panel">
+            <h3>Risk Settings</h3>
+            <div class="form-grid">
+              <label>Account Capital<input name="capital" type="number" step="0.01" placeholder="100000"></label>
+              <label>Risk Per Trade %<input name="riskPct" type="number" step="0.01" placeholder="1"></label>
+              <label>Max Daily Loss<input name="dailyLoss" type="number" step="0.01" placeholder="2000"></label>
+              <label>Max Drawdown %<input name="drawdownPct" type="number" step="0.01" placeholder="10"></label>
+            </div>
+            <button class="primary-btn" type="submit">Save Risk Settings</button>
+          </form>
+          <form id="capitalForm" class="panel form-panel">
+            <h3>Capital Movement</h3>
+            <div class="form-grid">
+              <label>Action<select name="transaction_type"><option value="deposit">Add Money</option><option value="withdrawal">Withdraw Money</option></select></label>
+              <label>Amount INR<input name="amount" type="number" step="0.01" required></label>
+            </div>
+            <label>Note<input name="note" placeholder="Bank transfer, profit withdrawal..."></label>
+            <button class="primary-btn" type="submit">Update Capital</button>
+          </form>
+          <section class="panel">
+            <h3>Trade Permission Simulator</h3>
+            <div class="form-grid">
+              <label>Planned Risk<input id="simRisk" type="number" step="0.01" placeholder="500"></label>
+              <label>Planned Reward<input id="simReward" type="number" step="0.01" placeholder="1000"></label>
+            </div>
+            <div id="simResult" class="permission-box"></div>
+          </section>
+          <section class="panel wide">
+            <div class="panel-head"><h3>Risk Checklist</h3><span id="riskHealthLabel">Ready</span></div>
+            <div id="riskChecklist" class="risk-checklist"></div>
+          </section>
+          <section class="panel wide">
+            <div class="panel-head"><h3>Capital History</h3><strong id="capitalFlowTotal">INR 0</strong></div>
+            <div id="capitalList" class="stack"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="expenses" class="page">
+        <div class="split-grid">
+          <form id="expenseForm" class="panel form-panel">
+            <h3>Add Expense</h3>
+            <div class="form-grid">
+              <label>Title<input name="title" placeholder="Lunch, broker fee, metro" required></label>
+              <label>Amount<input name="amount" type="number" step="0.01" required></label>
+              <label>Category<select name="category"><option>food</option><option>transport</option><option>trading</option><option>shopping</option><option>bills</option></select></label>
+              <label>Payment<select name="payment_method"><option>cash</option><option>upi</option><option>card</option></select></label>
+            </div>
+            <label>Note<input name="note" placeholder="Optional note"></label>
+            <button class="primary-btn" type="submit">Add Expense</button>
+          </form>
+          <section class="panel"><h3>Expense Categories</h3><div class="chart-box"><canvas id="expensePageChart"></canvas></div></section>
+        </div>
+        <section class="panel"><div class="panel-head"><h3>Expense History</h3><strong id="expenseTotal">0</strong></div><div id="expenseList" class="stack"></div></section>
+      </section>
+
+      <section id="tasks" class="page">
+        <div class="task-board">
+          <section class="panel task-sheet-panel">
+            <div class="task-sheet-top">
+              <div>
+                <span class="eyebrow">Monthly Progress</span>
+                <h3>Task Discipline Matrix</h3>
+              </div>
+              <div class="task-clock-block">
+                <strong id="taskProgress">0%</strong>
+                <span id="taskClock" class="task-clock">--</span>
+              </div>
+            </div>
+            <div class="sheet-scroll">
+              <div id="taskSheet" class="task-sheet"></div>
+            </div>
+            <div class="task-lab">
+              <section class="task-lab-panel task-bars-panel">
+                <div class="task-lab-head">
+                  <span>Daily Completion</span>
+                  <strong id="taskBestDay">Best 0%</strong>
+                </div>
+                <div id="taskDailyBars" class="task-daily-bars"></div>
+              </section>
+              <section class="task-lab-panel task-strip-panel">
+                <div class="task-lab-head">
+                  <span>Streak Strip</span>
+                  <strong id="taskPerfectDays">0 perfect</strong>
+                </div>
+                <div id="taskStreakStrip" class="task-streak-strip"></div>
+              </section>
+              <section class="task-lab-panel task-trend-panel">
+                <div class="task-lab-head">
+                  <span>Momentum Graph</span>
+                  <strong id="taskTrendLabel">Flat</strong>
+                </div>
+                <div id="taskTrendGraph" class="task-trend-graph"></div>
+              </section>
+              <section class="task-lab-panel task-rings-panel">
+                <div id="taskMiniRings" class="task-mini-rings"></div>
+              </section>
+            </div>
+            <div class="task-completion-strip">
+              <span>Habits Completed</span>
+              <div class="progress-track"><span id="taskProgressBar"></span></div>
+              <strong id="taskCompleted">0 / 0 complete</strong>
+            </div>
+          </section>
+          <aside class="task-side">
+            <form id="taskForm" class="panel form-panel task-form-panel">
+              <h3>Add Task</h3>
+              <label>Task<input name="title" placeholder="Wake up at 5:30, Gym, Project Work" required></label>
+              <div class="form-grid">
+                <label>Category<select name="category"><option>trading</option><option>health</option><option>study</option><option>routine</option></select></label>
+                <label>Schedule<select name="task_scope" id="taskScope"><option value="daily">Daily task</option><option value="today" selected>Today task</option><option value="date">Choose date</option></select></label>
+              </div>
+              <label id="taskDueDateWrap">Due Date<input name="due_date" type="date"></label>
+              <button class="primary-btn" type="submit">Add Task</button>
+            </form>
+            <section class="panel progress-panel task-score-panel">
+              <div class="panel-head">
+                <h3>Monthly Score</h3>
+                <strong id="taskStreak">0 day streak</strong>
+              </div>
+              <div class="task-score-ring" id="taskScoreRing"><strong>0%</strong><span>Score</span></div>
+              <div id="taskBadges" class="task-badges"></div>
+              <div id="taskWarnings" class="task-warnings"></div>
+              <p id="taskDueSummary">Complete at least one task daily to extend your streak.</p>
+              <div class="task-quick-actions">
+                <button id="markAllSampleTasks" class="mini-btn" type="button">Mark Today</button>
+                <button id="clearSampleTasks" class="mini-btn" type="button">Clear Today</button>
+              </div>
+              <button id="emailTaskWarnings" class="mini-btn task-email-btn" type="button">Email Warning</button>
+            </section>
+          </aside>
+        </div>
+      </section>
+
+      <section id="insights" class="page">
+        <section class="panel insight-hero">
+          <div>
+            <span class="eyebrow">Python AI Logic</span>
+            <h3>Behavioral Pattern Scan</h3>
+            <p>Detecting revenge trading, FOMO, overtrading, best trading time, and emotional performance.</p>
+          </div>
+          <button id="generateInsights" class="primary-btn">Regenerate Insights</button>
+        </section>
+        <div id="insightGrid" class="insight-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toastHost" class="toast-host"></div>
+  <script src="app.js?v=delta-85"></script>
+</body>
+</html>
