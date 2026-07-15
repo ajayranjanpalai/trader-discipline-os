@@ -882,6 +882,7 @@ td { color: var(--muted); }
   --day-count: 31;
   min-width: 980px;
   display: grid;
+  isolation: isolate;
   gap: 0;
   border: 1px solid rgba(126, 242, 220, .28);
   background: rgba(0, 18, 17, .74);
@@ -916,16 +917,28 @@ td { color: var(--muted); }
   min-width: 0;
   position: sticky;
   left: 0;
-  z-index: 2;
+  z-index: 40;
   display: flex;
   align-items: center;
   align-content: center;
   gap: 8px;
   padding: 6px 10px;
   color: #f5fff9;
-  background: rgba(9, 31, 24, .96);
+  background: #091f18;
+  isolation: isolate;
+  overflow: hidden;
+  box-shadow: 8px 0 0 #091f18;
+}
+.sheet-label::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: #091f18;
 }
 .sheet-label > div {
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: grid;
   gap: 3px;
@@ -949,6 +962,8 @@ td { color: var(--muted); }
   box-shadow: inset 0 0 0 1px rgba(54, 242, 75, .84);
 }
 .sheet-check {
+  position: relative;
+  z-index: 0;
   width: 100%;
   height: 100%;
   min-height: 34px;
@@ -967,10 +982,15 @@ td { color: var(--muted); }
 .sheet-check:not(:disabled) {
   cursor: pointer;
 }
+.sheet-check.available {
+  box-shadow: inset 0 0 0 1px rgba(54, 242, 75, .28);
+}
 .sheet-check:not(:disabled):hover {
   background: rgba(54, 242, 75, .28);
 }
 .sheet-action {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
   align-items: center;
@@ -980,6 +1000,8 @@ td { color: var(--muted); }
   font-size: 11px;
 }
 .sheet-delete {
+  position: relative;
+  z-index: 1;
   flex: 0 0 auto;
   min-width: 56px;
   height: 28px;
@@ -1147,10 +1169,10 @@ td { color: var(--muted); }
   margin-top: 14px;
 }
 .sheet-task-row.warning .sheet-label {
-  background: rgba(215, 181, 109, .055);
+  background: #091f18;
 }
 .sheet-task-row.danger .sheet-label {
-  background: rgba(224, 90, 117, .075);
+  background: #091f18;
 }
 .task-completion-strip {
   display: grid;
@@ -1933,6 +1955,10 @@ tbody tr:hover td {
 .sheet-label {
   color: var(--text);
   background: #ffffff;
+  box-shadow: 8px 0 0 #ffffff;
+}
+.sheet-label::before {
+  background: #ffffff;
 }
 
 .sheet-label span {
@@ -1948,6 +1974,10 @@ tbody tr:hover td {
   color: #ffffff;
   background: var(--green);
   box-shadow: inset 0 0 0 1px rgba(0, 0, 0, .04);
+}
+
+.sheet-check.available {
+  box-shadow: inset 0 0 0 1px rgba(37, 181, 159, .36);
 }
 
 .sheet-check:not(:disabled):hover {

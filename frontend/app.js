@@ -112,6 +112,7 @@ const localDateKey = (value = new Date()) => {
   return date.toISOString().slice(0, 10);
 };
 const todayDateKey = () => localDateKey();
+const taskDateKey = (year, month, day) => localDateKey(new Date(year, month, day));
 
 function toast(message, tone = "info") {
   const host = qs("#toastHost");
@@ -669,9 +670,6 @@ function taskSheetRow(task, year, month, today) {
   const completed = taskEffectiveCompleted(task);
   const tone = taskDueState(task).tone;
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const completedAt = task.completed_at ? new Date(task.completed_at) : null;
-  const completedInMonth = completedAt && completedAt.getFullYear() === year && completedAt.getMonth() === month;
-  const completedDay = completedInMonth ? completedAt.getDate() : completed ? today : 0;
   const completionPct = completed ? 100 : 0;
   const action = task.sample
     ? `<button class="sheet-delete" type="button" title="Remove task" aria-label="Remove ${escapeHTML(task.title)}" data-remove-sample-task="${escapeHTML(task.id)}">Delete</button>`
@@ -680,11 +678,14 @@ function taskSheetRow(task, year, month, today) {
   const dragHandle = task.sample && !state.tasks.length ? `<button class="sheet-drag-handle" type="button" title="Drag to reorder" aria-label="Drag ${escapeHTML(task.title)}">::</button>` : "";
   const cells = Array.from({ length: daysInMonth }, (_, index) => {
     const day = index + 1;
-    const isDone = completed && day === completedDay;
-    const canToggle = day === today;
-    const toggleAttr = task.sample ? `data-toggle-sample-task="${task.id}"` : `data-complete-task="${task.id}"`;
+    const dateKey = taskDateKey(year, month, day);
+    const isDone = taskCompletedOnDate(task, dateKey);
+    const canToggle = day <= today;
+    const toggleAttr = task.sample
+      ? `data-toggle-sample-task="${task.id}" data-task-date="${dateKey}"`
+      : `data-complete-task="${task.id}" data-task-date="${dateKey}"`;
     return `
-      <button class="sheet-check ${isDone ? "checked" : ""} ${day === today ? "today" : ""}" type="button" ${canToggle ? toggleAttr : "disabled"} aria-label="${escapeHTML(task.title)} day ${day}">
+      <button class="sheet-check ${isDone ? "checked" : ""} ${canToggle ? "available" : ""} ${day === today ? "today" : ""}" type="button" ${canToggle ? toggleAttr : "disabled"} aria-label="${escapeHTML(task.title)} day ${day}">
         ${isDone ? "&#10003;" : ""}
       </button>
     `;
@@ -728,8 +729,8 @@ function taskMonthSeries() {
     let completed = 0;
     if (!state.tasks.length) {
       completed = Object.values(state.sampleTaskChecks[dateKey] || {}).filter(Boolean).length;
-    } else if (day === today) {
-      completed = rows.filter(taskEffectiveCompleted).length;
+    } else {
+      completed = rows.filter((task) => taskCompletedOnDate(task, dateKey)).length;
     }
     const pct = total ? Math.round((completed / total) * 100) : 0;
     return { day, dateKey, total, completed, pct, isToday: day === today, isPast: day <= today };
@@ -815,13 +816,20 @@ function renderTaskMiniRings(items) {
 }
 
 function taskEffectiveCompleted(task) {
+  return taskCompletedOnDate(task, todayDateKey());
+}
+
+function taskCompletedOnDate(task, dateKey) {
   if (task.sample) {
-    return Boolean(state.sampleTaskChecks[todayDateKey()]?.[task.id]);
+    return Boolean(state.sampleTaskChecks[dateKey]?.[task.id]);
   }
-  if ((task.task_scope || "today") === "daily") {
-    return Boolean(task.completed_at && localDateKey(task.completed_at) === todayDateKey());
+  if (Array.isArray(task.completion_dates) && task.completion_dates.includes(dateKey)) {
+    return true;
   }
-  return Boolean(task.completed);
+  if (task.completed_at && localDateKey(task.completed_at) === dateKey) {
+    return true;
+  }
+  return Boolean(task.completed && !task.completed_at && dateKey === todayDateKey());
 }
 
 function taskScheduleLabel(task) {
@@ -861,8 +869,7 @@ function tasksWithWarnings() {
   return taskRowsForDisplay().filter((task) => ["Complete by today", "Overdue"].includes(taskDueState(task).label));
 }
 
-function toggleSampleTask(id) {
-  const dateKey = todayDateKey();
+function toggleSampleTask(id, dateKey = todayDateKey()) {
   state.sampleTaskChecks[dateKey] = state.sampleTaskChecks[dateKey] || {};
   state.sampleTaskChecks[dateKey][id] = !state.sampleTaskChecks[dateKey][id];
   localStorage.setItem("tdos_sample_task_checks", JSON.stringify(state.sampleTaskChecks));
@@ -1719,9 +1726,9 @@ function addLocalTask(data) {
   renderTasks();
 }
 
-async function toggleTask(id) {
+async function toggleTask(id, dateKey = todayDateKey()) {
   try {
-    await api(`/tasks/${id}/complete`, { method: "PATCH" });
+    await api(`/tasks/${id}/complete`, { method: "PATCH", body: JSON.stringify({ date: dateKey }) });
     await loadAll();
   } catch (error) {
     if (!isOfflineError(error)) {
@@ -1730,8 +1737,16 @@ async function toggleTask(id) {
     }
     state.tasks = state.tasks.map((task) => task.id === id ? {
       ...task,
-      completed: !taskEffectiveCompleted(task),
-      completed_at: taskEffectiveCompleted(task) ? null : new Date().toISOString(),
+      ...(() => {
+        const completionDates = taskCompletedOnDate(task, dateKey)
+          ? (task.completion_dates || []).filter((value) => value !== dateKey)
+          : [...new Set([...(task.completion_dates || []), dateKey])].sort();
+        return {
+          completion_dates: completionDates,
+          completed: completionDates.length > 0,
+          completed_at: completionDates.length ? `${completionDates[completionDates.length - 1]}T${new Date().toTimeString().slice(0, 8)}` : null,
+        };
+      })(),
     } : task);
     cacheState();
     renderTasks();
@@ -1957,8 +1972,8 @@ function bindEvents() {
     if (target.dataset.deleteTrade) await deleteTrade(Number(target.dataset.deleteTrade));
     if (target.dataset.deleteExpense) await deleteExpense(Number(target.dataset.deleteExpense));
     if (target.dataset.deleteCapital) await deleteCapitalTransaction(Number(target.dataset.deleteCapital));
-    if (target.dataset.completeTask) await toggleTask(Number(target.dataset.completeTask));
-    if (target.dataset.toggleSampleTask) toggleSampleTask(target.dataset.toggleSampleTask);
+    if (target.dataset.completeTask) await toggleTask(Number(target.dataset.completeTask), target.dataset.taskDate || todayDateKey());
+    if (target.dataset.toggleSampleTask) toggleSampleTask(target.dataset.toggleSampleTask, target.dataset.taskDate || todayDateKey());
     if (target.dataset.removeSampleTask) removeSampleTask(target.dataset.removeSampleTask);
     if (target.dataset.deleteTask) await deleteTask(Number(target.dataset.deleteTask));
     if (target.dataset.deleteSetup) deletePlaybookSetup(target.dataset.deleteSetup);

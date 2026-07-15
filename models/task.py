@@ -15,8 +15,12 @@ class Task(db.Model):
     completed = db.Column(db.Boolean, default=False)
     completed_at = db.Column(db.DateTime)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    completions = db.relationship("TaskCompletion", backref="task", lazy=True, cascade="all, delete-orphan")
 
     def to_dict(self):
+        completion_dates = {completion.completed_on.isoformat() for completion in self.completions}
+        if self.completed_at:
+            completion_dates.add(self.completed_at.date().isoformat())
         return {
             "id": self.id,
             "title": self.title,
@@ -25,5 +29,6 @@ class Task(db.Model):
             "due_date": self.due_date.isoformat() if self.due_date else None,
             "completed": self.completed,
             "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "completion_dates": sorted(completion_dates),
             "created_at": self.created_at.isoformat(),
         }

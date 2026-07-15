@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from flask import Blueprint, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
 
-from models import Task, User, db
+from models import Task, TaskCompletion, User, db
 from services.emailer import email_configured
 from services.task_notifications import effective_completed, send_user_task_warning_email, task_warning_state
 
@@ -34,7 +34,12 @@ def _task_warning_state(task):
 def _stats(user_id):
     tasks = Task.query.filter_by(user_id=user_id).all()
     completed = [task for task in tasks if _effective_completed(task)]
-    days = {task.completed_at.date() for task in completed if task.completed_at}
+    days = {
+        completion.completed_on
+        for task in tasks
+        for completion in task.completions
+    }
+    days.update(task.completed_at.date() for task in tasks if task.completed_at)
     today = _today()
     due_today = [task for task in tasks if _task_warning_state(task) == "Complete by today"]
     streak = 0
@@ -111,12 +116,34 @@ def add_task():
 def complete_task(task_id):
     user_id = int(get_jwt_identity())
     task = Task.query.filter_by(id=task_id, user_id=user_id).first_or_404()
-    if _effective_completed(task):
-        task.completed = False
-        task.completed_at = None
+    data = request.get_json(silent=True) or {}
+    completed_on = _parse_due_date(data.get("date")) or _today()
+    if completed_on > _today():
+        return {"error": "Future task dates cannot be completed yet."}, 400
+
+    completion = TaskCompletion.query.filter_by(task_id=task.id, completed_on=completed_on).first()
+    legacy_match = task.completed_at and task.completed_at.date() == completed_on
+    if completion or legacy_match:
+        if completion:
+            db.session.delete(completion)
+        if legacy_match:
+            task.completed_at = None
     else:
+        completed_at = datetime.combine(completed_on, datetime.now().time())
+        db.session.add(TaskCompletion(task_id=task.id, completed_on=completed_on))
+        task.completed_at = completed_at
+    db.session.flush()
+    latest_completion = (
+        TaskCompletion.query
+        .filter_by(task_id=task.id)
+        .order_by(TaskCompletion.completed_on.desc())
+        .first()
+    )
+    if latest_completion:
         task.completed = True
-        task.completed_at = datetime.now()
+        task.completed_at = datetime.combine(latest_completion.completed_on, datetime.now().time())
+    else:
+        task.completed = bool(task.completed_at)
     db.session.commit()
     return {"task": task.to_dict(), "stats": _stats(user_id)}
 

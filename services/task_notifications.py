@@ -10,9 +10,14 @@ def today():
 
 def effective_completed(task, current_date=None):
     current_date = current_date or today()
+    has_completion = any(completion.completed_on == current_date for completion in task.completions)
+    if has_completion:
+        return True
+    if task.completed_at and task.completed_at.date() == current_date:
+        return True
     if (task.task_scope or "today") == "daily":
-        return bool(task.completed_at and task.completed_at.date() == current_date)
-    return bool(task.completed)
+        return False
+    return bool(task.completed and not task.completed_at)
 
 
 def task_warning_state(task, current_date=None):
