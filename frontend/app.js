@@ -977,11 +977,18 @@ function renderInsights() {
 
 function renderTicker() {
   const ticks = [
-    ["BTC", 67420 + Math.round(Math.sin(Date.now() / 90000) * 220)],
-    ["ETH", 3510 + Math.round(Math.cos(Date.now() / 90000) * 40)],
-    ["NIFTY", 22520 + Math.round(Math.sin(Date.now() / 130000) * 60)],
+    ["BTC", 67420 + Math.round(Math.sin(Date.now() / 90000) * 220), "+1.23%"],
+    ["ETH", 3510 + Math.round(Math.cos(Date.now() / 90000) * 40), "+0.85%"],
+    ["NIFTY", 22520 + Math.round(Math.sin(Date.now() / 130000) * 60), "+0.62%"],
   ];
-  qs("#ticker").textContent = ticks.map(([name, value]) => `${name} ${value}`).join("  /  ");
+  qs("#ticker").innerHTML = ticks.map(([name, value, change]) => `
+    <span class="ticker-item">
+      <b>${name}</b>
+      <strong>${Number(value).toLocaleString("en-IN")}</strong>
+      <small>${change}</small>
+      <i></i>
+    </span>
+  `).join("");
 }
 
 function empty(text) {
@@ -1392,7 +1399,7 @@ function drawFallbackChart(canvas, config) {
 
   if (config.type === "doughnut") {
     const total = values.reduce((sum, value) => sum + Math.max(0, value), 0) || 1;
-    const colors = dataset.backgroundColor || ["#ff6b4a", "#25b59f", "#f2b84b", "#6f7dfb"];
+    const colors = dataset.backgroundColor || ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6"];
     let start = -Math.PI / 2;
     values.forEach((value, index) => {
       const slice = (Math.max(0, value) / total) * Math.PI * 2;
@@ -1409,7 +1416,7 @@ function drawFallbackChart(canvas, config) {
     ctx.arc(width / 2, height / 2, Math.min(width, height) * 0.19, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalCompositeOperation = "source-over";
-    ctx.fillStyle = "#9a9aa2";
+    ctx.fillStyle = "#64748B";
     ctx.textAlign = "center";
     ctx.fillText(labels.join(" / "), width / 2, height - 14);
     return;
@@ -1422,7 +1429,7 @@ function drawFallbackChart(canvas, config) {
   const xFor = (index) => pad + (values.length === 1 ? (width - pad * 2) / 2 : (index / (values.length - 1)) * (width - pad * 2));
   const yFor = (value) => height - pad - ((value - min) / span) * (height - pad * 2);
 
-  ctx.strokeStyle = "rgba(28,32,42,.08)";
+  ctx.strokeStyle = "rgba(148,163,184,.18)";
   ctx.beginPath();
   ctx.moveTo(pad, yFor(0));
   ctx.lineTo(width - pad, yFor(0));
@@ -1434,11 +1441,11 @@ function drawFallbackChart(canvas, config) {
       const x = xFor(index) - barWidth / 2;
       const y = yFor(Math.max(0, value));
       const base = yFor(0);
-      ctx.fillStyle = value >= 0 ? "rgba(37,181,159,.76)" : "rgba(239,83,80,.76)";
+      ctx.fillStyle = value >= 0 ? "rgba(16,185,129,.76)" : "rgba(239,68,68,.76)";
       ctx.fillRect(x, Math.min(y, base), barWidth, Math.max(2, Math.abs(base - y)));
     });
   } else {
-    ctx.strokeStyle = "#ff6b4a";
+    ctx.strokeStyle = "#3B82F6";
     ctx.beginPath();
     values.forEach((value, index) => {
       const x = xFor(index);
@@ -1450,12 +1457,12 @@ function drawFallbackChart(canvas, config) {
     values.forEach((value, index) => {
       ctx.beginPath();
       ctx.arc(xFor(index), yFor(value), 3, 0, Math.PI * 2);
-      ctx.fillStyle = "#ff6b4a";
+      ctx.fillStyle = "#3B82F6";
       ctx.fill();
     });
   }
 
-  ctx.fillStyle = "#7a7f8f";
+  ctx.fillStyle = "#64748B";
   ctx.textAlign = "left";
   ctx.fillText(labels[0] || "", pad, height - 8);
   ctx.textAlign = "right";
@@ -1466,13 +1473,13 @@ function baseOptions(showLegend = false, moneyTicks = false) {
   return {
     responsive: true,
     maintainAspectRatio: false,
-    plugins: { legend: { display: showLegend, labels: { color: "#6f7484", boxWidth: 10 } } },
+    plugins: { legend: { display: showLegend, labels: { color: "#64748B", boxWidth: 10 } } },
     scales: {
-      x: { grid: { color: "rgba(28,32,42,.08)" }, ticks: { color: "#7a7f8f" } },
+      x: { grid: { color: "rgba(148,163,184,.18)" }, ticks: { color: "#64748B" } },
       y: {
-        grid: { color: "rgba(28,32,42,.08)" },
+        grid: { color: "rgba(148,163,184,.18)" },
         ticks: {
-          color: "#7a7f8f",
+          color: "#64748B",
           callback: (value) => moneyTicks ? fmtMoney(value).replace(/\u20b9/g, "") : value,
         },
       },
@@ -1490,28 +1497,28 @@ function renderCharts() {
 
   chart("dashEquityChart", {
     type: "line",
-    data: { labels: equity.map((p) => p.label), datasets: [{ data: equity.map((p) => p.value), borderColor: "#ff6b4a", backgroundColor: "rgba(255,107,74,.14)", fill: true, tension: .36, pointRadius: 2 }] },
+    data: { labels: equity.map((p) => p.label), datasets: [{ data: equity.map((p) => p.value), borderColor: "#3B82F6", backgroundColor: "rgba(59,130,246,.14)", fill: true, tension: .36, pointRadius: 2 }] },
     options: baseOptions(false, true),
   });
   chart("dailyChart", {
     type: "bar",
-    data: { labels: daily.map((p) => p.label), datasets: [{ data: daily.map((p) => p.value), backgroundColor: daily.map((p) => p.value >= 0 ? "rgba(37,181,159,.76)" : "rgba(239,83,80,.76)"), borderRadius: 5 }] },
+    data: { labels: daily.map((p) => p.label), datasets: [{ data: daily.map((p) => p.value), backgroundColor: daily.map((p) => p.value >= 0 ? "rgba(16,185,129,.76)" : "rgba(239,68,68,.76)"), borderRadius: 5 }] },
     options: baseOptions(false),
   });
   chart("winLossChart", {
     type: "doughnut",
-    data: { labels: ["Wins", "Losses"], datasets: [{ data: [winLoss.wins, winLoss.losses], backgroundColor: ["rgba(37,181,159,.78)", "rgba(239,83,80,.78)"] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#6f7484" } } } },
+    data: { labels: ["Wins", "Losses"], datasets: [{ data: [winLoss.wins, winLoss.losses], backgroundColor: ["rgba(16,185,129,.78)", "rgba(239,68,68,.78)"] }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#64748B" } } } },
   });
   chart("emotionChart", {
     type: "bar",
-    data: { labels: emotion.map((p) => p.label), datasets: [{ data: emotion.map((p) => p.value), backgroundColor: "rgba(111,125,251,.72)", borderRadius: 5 }] },
+    data: { labels: emotion.map((p) => p.label), datasets: [{ data: emotion.map((p) => p.value), backgroundColor: "rgba(139,92,246,.72)", borderRadius: 5 }] },
     options: baseOptions(false),
   });
   const expenseConfig = {
     type: "doughnut",
-    data: { labels: expenses.map((p) => p.label), datasets: [{ data: expenses.map((p) => p.value), backgroundColor: ["#ff6b4a", "#25b59f", "#f2b84b", "#6f7dfb", "#ef5350"] }] },
-    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#6f7484" } } } },
+    data: { labels: expenses.map((p) => p.label), datasets: [{ data: expenses.map((p) => p.value), backgroundColor: ["#3B82F6", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444"] }] },
+    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: "#64748B" } } } },
   };
   chart("expenseChart", expenseConfig);
   chart("expensePageChart", expenseConfig);
@@ -1521,7 +1528,15 @@ function setPage(page) {
   qsa(".page").forEach((node) => node.classList.toggle("active", node.id === page));
   qsa(".nav-btn").forEach((node) => node.classList.toggle("active", node.dataset.page === page));
   const titles = { dashboard: "Dashboard", journal: "Trade Journal", risk: "Risk Desk", analytics: "Analytics", expenses: "Expenses", tasks: "Tasks", insights: "AI Insights" };
-  qs("#pageTitle").textContent = titles[page] || "Command Center";
+  const subtitle = qs("#pageSubtitle");
+  if (page === "dashboard") {
+    const firstName = (state.user?.name || "Ajay").split(" ")[0] || "Ajay";
+    qs("#pageTitle").textContent = `Welcome back, ${firstName}`;
+    if (subtitle) subtitle.textContent = "Stay disciplined. Stay profitable.";
+  } else {
+    qs("#pageTitle").textContent = titles[page] || "Command Center";
+    if (subtitle) subtitle.textContent = "Track decisions, risk, habits, and results.";
+  }
   setTimeout(renderCharts, 0);
 }
 
@@ -1996,7 +2011,7 @@ async function bootstrap() {
   bindEvents();
   createIcons();
   registerServiceWorker();
-  qs("#pageTitle").textContent = "Dashboard";
+  qs("#pageTitle").textContent = "Welcome back, Ajay";
   state.currentDateKey = todayDateKey();
   setInterval(renderTicker, 3500);
   setInterval(refreshLiveTaskTime, 1000);

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#f7f7f4">
+  <meta name="theme-color" content="#F8FAFC">
   <title>Trader Discipline Operating System</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css?v=task-history-v4">
@@ -45,7 +45,7 @@
   <div id="appShell" class="app-shell hidden">
     <aside class="sidebar">
       <div class="logo">
-        <strong><i data-lucide="shopping-bag"></i></strong>
+        <strong><i data-lucide="shield-check"></i></strong>
         <span>Discipline OS</span>
       </div>
       <nav>
@@ -73,6 +73,7 @@
         <div>
           <span class="eyebrow">Trader Discipline Operating System</span>
           <h2 id="pageTitle">Command Center</h2>
+          <p id="pageSubtitle" class="page-subtitle">Stay disciplined. Stay profitable.</p>
         </div>
         <div class="top-actions">
           <div id="ticker" class="ticker"></div>
@@ -103,6 +104,26 @@
             <strong id="planState">Not Set</strong>
           </div>
         </div>
+        <div class="metric-grid">
+          <article class="metric-card"><span>Total P/L</span><strong id="mPnl">0</strong><small>Net journal result</small></article>
+          <article class="metric-card"><span>Win Rate</span><strong id="mWinRate">0%</strong><small>Execution quality</small></article>
+          <article class="metric-card"><span>Trades</span><strong id="mTrades">0</strong><small id="mToday">0 / 2 today</small></article>
+          <article class="metric-card"><span>Playbook Fit</span><strong id="mPlaybookFit">0%</strong><small id="mPlaybookCount">0 tagged trades</small></article>
+        </div>
+        <div class="dashboard-grid">
+          <section class="panel wide">
+            <div class="panel-head"><h3>Performance Overview</h3><span id="quote"></span></div>
+            <div class="chart-box"><canvas id="dashEquityChart"></canvas></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Recent Trades</h3><button class="mini-btn" data-jump="journal">Add Trade</button></div>
+            <div id="recentTrades" class="stack"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>Session Review</h3><span id="reviewDate"></span></div>
+            <div id="sessionReview" class="review-list"></div>
+          </section>
+        </div>
         <div class="command-grid">
           <section class="panel command-panel">
             <div class="panel-head">
@@ -124,26 +145,6 @@
             </div>
             <div class="quality-meter"><span id="qualityMeter"></span></div>
             <div id="coachActions" class="coach-actions"></div>
-          </section>
-        </div>
-        <div class="metric-grid">
-          <article class="metric-card"><span>Total P/L</span><strong id="mPnl">0</strong><small>Net journal result</small></article>
-          <article class="metric-card"><span>Win Rate</span><strong id="mWinRate">0%</strong><small>Execution quality</small></article>
-          <article class="metric-card"><span>Trades</span><strong id="mTrades">0</strong><small id="mToday">0 / 2 today</small></article>
-          <article class="metric-card"><span>Playbook Fit</span><strong id="mPlaybookFit">0%</strong><small id="mPlaybookCount">0 tagged trades</small></article>
-        </div>
-        <div class="dashboard-grid">
-          <section class="panel wide">
-            <div class="panel-head"><h3>Equity Curve</h3><span id="quote"></span></div>
-            <div class="chart-box"><canvas id="dashEquityChart"></canvas></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Recent Trades</h3><button class="mini-btn" data-jump="journal">Add Trade</button></div>
-            <div id="recentTrades" class="stack"></div>
-          </section>
-          <section class="panel">
-            <div class="panel-head"><h3>Session Review</h3><span id="reviewDate"></span></div>
-            <div id="sessionReview" class="review-list"></div>
           </section>
         </div>
       </section>
