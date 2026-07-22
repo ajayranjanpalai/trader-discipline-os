@@ -17,6 +17,7 @@ env/
 !.env.example
 
 # Test and tool caches
+.pycache_check/
 .pytest_cache/
 .coverage
 htmlcov/
@@ -26,4 +27,3 @@ htmlcov/
 .idea/
 .DS_Store
 Thumbs.db
-
