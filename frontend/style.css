@@ -1072,9 +1072,9 @@ td { color: var(--muted); }
 .task-daily-bars {
   height: 92px;
   display: grid;
-  grid-template-columns: repeat(31, minmax(7px, 1fr));
+  grid-template-columns: repeat(31, minmax(0, 1fr));
   align-items: end;
-  gap: 4px;
+  gap: clamp(2px, .45vw, 4px);
   padding: 10px;
 }
 .task-daily-bars span {
@@ -1096,11 +1096,12 @@ td { color: var(--muted); }
 }
 .task-streak-strip {
   display: grid;
-  grid-template-columns: repeat(31, minmax(10px, 1fr));
-  gap: 4px;
+  grid-template-columns: repeat(31, minmax(0, 1fr));
+  gap: clamp(2px, .45vw, 4px);
   padding: 14px 10px;
 }
 .task-streak-strip span {
+  min-width: 0;
   height: 22px;
   border: 1px solid rgba(126, 242, 220, .28);
   background: rgba(1, 37, 34, .72);
@@ -1176,13 +1177,21 @@ td { color: var(--muted); }
 }
 .task-completion-strip {
   display: grid;
-  grid-template-columns: auto minmax(150px, 1fr) auto;
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   gap: 14px;
   align-items: center;
   padding: 14px 18px 18px;
   border-top: 1px solid rgba(102, 211, 173, .18);
   color: rgba(210, 255, 240, .66);
   font-weight: 800;
+}
+.task-completion-strip > span,
+.task-completion-strip > strong {
+  min-width: 0;
+  white-space: nowrap;
+}
+.task-completion-strip .progress-track {
+  min-width: 0;
 }
 .task-form-panel,
 .task-score-panel {
