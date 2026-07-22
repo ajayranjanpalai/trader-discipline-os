@@ -1603,7 +1603,7 @@ textarea:focus {
 }
 
 .app-shell {
-  grid-template-columns: 268px 1fr;
+  grid-template-columns: 264px 1fr;
 }
 
 .sidebar {
@@ -1613,7 +1613,7 @@ textarea:focus {
 }
 
 .logo {
-  height: 88px;
+  height: 106px;
   background: #0F172A;
   border-bottom: 1px solid rgba(148, 163, 184, .18);
 }
@@ -1631,16 +1631,28 @@ textarea:focus {
   color: #F8FAFC;
 }
 
+.logo span {
+  display: grid;
+  gap: 4px;
+  line-height: 1.1;
+}
+
+.logo small {
+  color: #CBD5E1;
+  font-size: 11px;
+  font-weight: 500;
+}
+
 .sidebar nav {
-  gap: 6px;
-  padding: 14px 12px;
+  gap: 12px;
+  padding: 16px;
 }
 
 .nav-btn {
-  height: 52px;
-  padding: 0 14px;
+  height: 50px;
+  padding: 0 18px;
   border: 1px solid transparent;
-  border-radius: var(--radius);
+  border-radius: 8px;
   color: #CBD5E1;
   background: transparent;
 }
@@ -1656,12 +1668,13 @@ textarea:focus {
 .nav-btn.active,
 .nav-btn:hover {
   color: #ffffff;
-  background: rgba(59, 130, 246, .14);
-  border-color: rgba(96, 165, 250, .26);
+  background: linear-gradient(135deg, #2563EB, #3B82F6);
+  border-color: rgba(147, 197, 253, .38);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, .26);
 }
 
 .nav-btn.active {
-  box-shadow: inset 3px 0 0 var(--cyan);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, .26);
 }
 
 .sidebar-user {
@@ -1701,10 +1714,14 @@ textarea:focus {
   position: sticky;
   top: 0;
   z-index: 8;
-  padding: 22px 46px 18px;
+  padding: 28px 30px 22px;
   background: rgba(248, 250, 252, .86);
   border-bottom: 1px solid rgba(226, 232, 240, .78);
   backdrop-filter: blur(18px);
+}
+
+.topbar .eyebrow {
+  display: none;
 }
 
 .topbar h2 {
@@ -1779,7 +1796,11 @@ textarea:focus {
 }
 
 .page {
-  padding: 18px 46px 40px;
+  padding: 22px 30px 40px;
+}
+
+#dashboard > .alert {
+  display: none !important;
 }
 
 .alert,
@@ -1807,27 +1828,28 @@ textarea:focus {
 }
 
 .metric-card {
-  min-height: 144px;
-  padding: 20px;
+  min-height: 136px;
+  padding: 22px;
   border-radius: 14px;
 }
 
 .metric-card::before {
-  height: 5px;
-  background: linear-gradient(90deg, var(--cyan), var(--violet), var(--green), var(--blue));
+  height: 0;
+  background: transparent;
 }
 
 .metric-card span {
   color: var(--muted);
-  font-size: 13px;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: .7px;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .metric-card strong {
   color: var(--text);
-  font-size: 32px;
+  font-size: 30px;
+  margin-top: 12px;
 }
 
 .panel {
@@ -1835,7 +1857,8 @@ textarea:focus {
 }
 
 .dashboard-grid {
-  grid-template-columns: minmax(0, 1.45fr) minmax(280px, .72fr) minmax(280px, .86fr);
+  grid-template-columns: minmax(0, 1.5fr) minmax(280px, .78fr) minmax(280px, .9fr);
+  margin-bottom: 20px;
 }
 
 .dashboard-grid .wide {
@@ -1844,6 +1867,10 @@ textarea:focus {
 
 .command-grid {
   grid-template-columns: minmax(0, 1fr) minmax(340px, .82fr);
+}
+
+.ops-strip {
+  margin-top: 2px;
 }
 
 .metric-card small,
