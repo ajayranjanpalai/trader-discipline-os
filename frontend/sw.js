@@ -1,9 +1,9 @@
-const CACHE_NAME = "tdos-shell-v11";
+const CACHE_NAME = "tdos-shell-v12";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/style.css?v=task-history-v4",
-  "/app.js?v=task-history-v4",
+  "/style.css?v=blue-finance-v3",
+  "/app.js?v=blue-finance-v3",
   "/manifest.webmanifest"
 ];
 
