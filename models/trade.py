@@ -12,6 +12,7 @@ class Trade(db.Model):
     direction = db.Column(db.String(10), nullable=False)
     entry = db.Column(db.Float, nullable=False)
     exit = db.Column(db.Float, nullable=False)
+    remaining_exit = db.Column(db.Float, nullable=True, default=0.0)
     stop_loss = db.Column(db.Float, nullable=False)
     position_size = db.Column(db.Float, nullable=False)
     closed_quantity = db.Column(db.Float, default=0.0)
@@ -33,6 +34,7 @@ class Trade(db.Model):
             "direction": self.direction,
             "entry": self.entry,
             "exit": self.exit,
+            "remaining_exit": self.remaining_exit,
             "stop_loss": self.stop_loss,
             "position_size": self.position_size,
             "closed_quantity": self.closed_quantity or 0,

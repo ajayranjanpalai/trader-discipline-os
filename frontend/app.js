@@ -431,6 +431,8 @@ function renderTrades() {
   qs("#tradeCountLabel").textContent = `${visibleTrades.length} shown / ${state.trades.length} logged`;
   qs("#tradeRows").innerHTML = visibleTrades.map((trade) => {
     const { closedQuantity, remainingQuantity } = tradeQuantitySummary(trade);
+    const hasRemainingExit = trade.remaining_exit && Number(trade.remaining_exit) > 0 && remainingQuantity > 0;
+    const exitDisplay = hasRemainingExit ? `${trade.exit} / Rest: ${trade.remaining_exit}` : trade.exit;
     return `
       <tr>
         <td>${new Date(trade.timestamp).toLocaleString()}</td>
@@ -438,7 +440,7 @@ function renderTrades() {
         <td>${escapeHTML(setupMeta(trade).name || "--")}</td>
         <td>${escapeHTML(trade.direction)}</td>
         <td>${trade.entry}</td>
-        <td>${trade.exit}</td>
+        <td>${exitDisplay}</td>
         <td>${closedQuantity.toFixed(2)}</td>
         <td>${remainingQuantity.toFixed(2)}</td>
         <td>${fmtMoney(tradeBrokerage(trade))}</td>
@@ -498,6 +500,7 @@ function encodeTradePayload(form) {
   data.position_size = positionSize;
   data.closed_quantity = closedQuantity > 0 ? closedQuantity : positionSize;
   data.remaining_quantity = Math.max(0, positionSize - Number(data.closed_quantity || 0));
+  data.remaining_exit = data.remaining_exit ? Number(data.remaining_exit) : null;
   const reason = String(data.trade_reason || "").replace(setupPrefix, "").trim();
   data.trade_reason = setup ? `[Setup: ${setup.id}] ${reason}`.trim() : reason;
   return data;
@@ -1607,6 +1610,7 @@ async function saveTrade(event) {
       id,
       entry: Number(data.entry || 0),
       exit: Number(data.exit || 0),
+      remaining_exit: data.remaining_exit ? Number(data.remaining_exit) : null,
       stop_loss: Number(data.stop_loss || 0),
       position_size: Number(data.position_size || 0),
       closed_quantity: Number(data.closed_quantity || 0),
@@ -1638,7 +1642,7 @@ function editTrade(id) {
   state.editingTradeId = id;
   Object.entries(trade).forEach(([key, value]) => {
     if (!form.elements[key]) return;
-    form.elements[key].value = key === "timestamp" ? value.slice(0, 16) : value;
+    form.elements[key].value = key === "timestamp" ? value.slice(0, 16) : (value ?? "");
   });
   const meta = setupMeta(trade);
   const { closedQuantity, remainingQuantity } = tradeQuantitySummary(trade);
@@ -1646,6 +1650,9 @@ function editTrade(id) {
   form.elements.trade_reason.value = meta.reason;
   form.elements.closed_quantity.value = closedQuantity.toFixed(2);
   form.elements.remaining_quantity.value = remainingQuantity.toFixed(2);
+  if (form.elements.remaining_exit) {
+    form.elements.remaining_exit.value = trade.remaining_exit ? trade.remaining_exit : "";
+  }
   qs("#tradeFormTitle").textContent = "Edit Trade Entry";
   qs("#cancelEditTrade").classList.remove("hidden");
   resetChecklist(true);
@@ -1848,28 +1855,39 @@ function resetChecklist(checked = false) {
 function calculateTradeAmounts(form) {
   const entry = Number(form.elements.entry?.value || 0);
   const exit = Number(form.elements.exit?.value || 0);
+  const remainingExit = Number(form.elements.remaining_exit?.value || 0);
   const stop = Number(form.elements.stop_loss?.value || 0);
   const size = Number(form.elements.position_size?.value || 0);
+  const rawClosed = form.elements.closed_quantity?.value;
+  const closedQuantity = rawClosed === "" || rawClosed === undefined ? size : Number(rawClosed || 0);
+  const remainingQuantity = Math.max(0, size - closedQuantity);
   const direction = String(form.elements.direction?.value || "long").toLowerCase();
-  const signedMove = direction === "short" ? entry - exit : exit - entry;
-  const pnlUsd = signedMove * size;
+
+  const signedMove1 = direction === "short" ? entry - exit : exit - entry;
+  let pnlUsd = 0;
+  if (remainingQuantity > 0 && remainingExit) {
+    const signedMove2 = direction === "short" ? entry - remainingExit : remainingExit - entry;
+    pnlUsd = (signedMove1 * closedQuantity) + (signedMove2 * remainingQuantity);
+  } else if (closedQuantity < size && !remainingExit) {
+    pnlUsd = signedMove1 * closedQuantity;
+  } else {
+    pnlUsd = signedMove1 * size;
+  }
+
   const riskUsd = Math.abs(entry - stop) * size;
   const riskReward = riskUsd ? Math.abs(pnlUsd) / riskUsd : 0;
-  return { entry, exit, stop, size, pnlUsd, riskUsd, riskReward };
+  return { entry, exit, remainingExit, stop, size, closedQuantity, remainingQuantity, pnlUsd, riskUsd, riskReward };
 }
 
 function updateTradeDerivedFields(form) {
-  const { entry, exit, stop, size, pnlUsd, riskReward } = calculateTradeAmounts(form);
+  const { entry, exit, stop, size, remainingQuantity, pnlUsd, riskReward } = calculateTradeAmounts(form);
+  if (form.elements.closed_quantity && form.elements.remaining_quantity) {
+    form.elements.remaining_quantity.value = remainingQuantity.toFixed(2);
+  }
   const hasTradeMath = entry && exit && stop && size;
   if (!hasTradeMath) return;
   form.elements.pnl.value = pnlUsd.toFixed(2);
   form.elements.risk_reward.value = riskReward.toFixed(2);
-  if (form.elements.closed_quantity && form.elements.remaining_quantity) {
-    const rawClosedQuantity = form.elements.closed_quantity.value;
-    const closedQuantity = rawClosedQuantity === "" ? size : Number(rawClosedQuantity || 0);
-    const remainingQuantity = Math.max(0, size - closedQuantity);
-    form.elements.remaining_quantity.value = remainingQuantity.toFixed(2);
-  }
 }
 
 function renderRiskPreview() {
@@ -1917,7 +1935,7 @@ function exportTradesCsv() {
     toast("No trades to export.", "danger");
     return;
   }
-  const headers = ["time", "pair", "setup", "direction", "entry", "exit", "stop_loss", "position_size", "closed_quantity", "remaining_quantity", "pnl_usd", "brokerage_inr", "net_pnl_inr", "risk_reward", "emotion", "reason", "notes"];
+  const headers = ["time", "pair", "setup", "direction", "entry", "exit", "remaining_exit", "stop_loss", "position_size", "closed_quantity", "remaining_quantity", "pnl_usd", "brokerage_inr", "net_pnl_inr", "risk_reward", "emotion", "reason", "notes"];
   const csv = [
     headers.join(","),
     ...rows.map((trade) => headers.map((key) => {

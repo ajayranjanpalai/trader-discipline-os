@@ -42,5 +42,27 @@ class TradePartialCloseTests(unittest.TestCase):
         self.assertEqual(fields["remaining_quantity"], 0.0)
 
 
+    def test_partial_close_with_remaining_exit(self):
+        payload = {
+            "pair": "BTC/USDT",
+            "direction": "long",
+            "entry": 100,
+            "exit": 110,
+            "remaining_exit": 120,
+            "stop_loss": 95,
+            "position_size": 100,
+            "closed_quantity": 40,
+            "pnl": 1600,
+            "risk_reward": 3.2,
+            "emotion": "calm",
+        }
+
+        fields = _trade_fields(payload)
+
+        self.assertEqual(fields["closed_quantity"], 40.0)
+        self.assertEqual(fields["remaining_quantity"], 60.0)
+        self.assertEqual(fields["remaining_exit"], 120.0)
+
+
 if __name__ == "__main__":
     unittest.main()

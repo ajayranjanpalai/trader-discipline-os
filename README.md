@@ -3,6 +3,15 @@
 A Flask web application for trade journaling, discipline tracking, risk management,
 expenses, daily tasks, analytics, and behavioural trading insights.
 
+## Features
+
+- **Trade Journal & Partial Booking**: Log trades with position size, entry price, partial close quantity, initial exit price, and rest quantity exit price (`remaining_exit`). Automatically calculates total trade P/L and Risk/Reward for partial profit bookings in a single entry.
+- **Discipline Engine**: Daily trade limits, rule enforcement, and pre-trade checklist guards.
+- **Risk Management**: Risk desk with daily loss limits, max drawdown rules, and dynamic position size calculator.
+- **Analytics & Insights**: Performance charts, win/loss stats, setup playbook tracking, and AI-driven behavioural insights.
+- **Task & Routine Tracking**: Daily discipline checklists, streaks, and warning emails.
+- **Capital & Expenses**: Track deposits, withdrawals, equity curve, and daily trading expenses.
+
 ## Technology
 
 - Flask and SQLAlchemy backend

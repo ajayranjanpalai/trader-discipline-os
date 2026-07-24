@@ -32,11 +32,15 @@ def _trade_fields(data):
     if closed_quantity > position_size:
         raise ValueError("Closed quantity cannot exceed position size")
 
+    remaining_exit_raw = data.get("remaining_exit")
+    remaining_exit = float(remaining_exit_raw) if remaining_exit_raw not in (None, "", "null") else None
+
     return {
         "pair": str(data["pair"]).upper(),
         "direction": str(data["direction"]).lower(),
         "entry": float(data["entry"]),
         "exit": float(data["exit"]),
+        "remaining_exit": remaining_exit,
         "stop_loss": float(data["stop_loss"]),
         "position_size": position_size,
         "closed_quantity": closed_quantity,
