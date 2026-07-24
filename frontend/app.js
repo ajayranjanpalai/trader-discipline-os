@@ -77,6 +77,12 @@ const quotes = [
 const DELTA_USD_INR_RATE = 85;
 const deltaUsdToInr = (value) => Number(value || 0) * DELTA_USD_INR_RATE;
 const tradeBrokerage = (trade) => Number(trade?.brokerage || 0);
+const tradeQuantitySummary = (trade) => {
+  const positionSize = Number(trade?.position_size || 0);
+  const closedQuantity = Number(trade?.closed_quantity ?? positionSize);
+  const remainingQuantity = Number(trade?.remaining_quantity ?? Math.max(0, positionSize - closedQuantity));
+  return { closedQuantity, remainingQuantity };
+};
 const netTradePnlInr = (trade) => deltaUsdToInr(trade?.pnl) - tradeBrokerage(trade);
 
 const fmtMoney = (value) =>
@@ -423,23 +429,28 @@ function renderTrades() {
   renderEmotionFilterOptions();
   const visibleTrades = filteredTrades();
   qs("#tradeCountLabel").textContent = `${visibleTrades.length} shown / ${state.trades.length} logged`;
-  qs("#tradeRows").innerHTML = visibleTrades.map((trade) => `
-    <tr>
-      <td>${new Date(trade.timestamp).toLocaleString()}</td>
-      <td>${escapeHTML(trade.pair)}</td>
-      <td>${escapeHTML(setupMeta(trade).name || "--")}</td>
-      <td>${escapeHTML(trade.direction)}</td>
-      <td>${trade.entry}</td>
-      <td>${trade.exit}</td>
-      <td>${fmtMoney(tradeBrokerage(trade))}</td>
-      <td class="${netTradePnlInr(trade) >= 0 ? "profit" : "loss"}">${fmtMoney(netTradePnlInr(trade))}</td>
-      <td>${escapeHTML(trade.emotion)}</td>
-      <td class="table-row-actions">
-        <button class="mini-btn" data-edit-trade="${trade.id}">Edit</button>
-        <button class="mini-btn" data-delete-trade="${trade.id}">Delete</button>
-      </td>
-    </tr>
-  `).join("") || `<tr><td colspan="10">${empty("No trades match the current filters.")}</td></tr>`;
+  qs("#tradeRows").innerHTML = visibleTrades.map((trade) => {
+    const { closedQuantity, remainingQuantity } = tradeQuantitySummary(trade);
+    return `
+      <tr>
+        <td>${new Date(trade.timestamp).toLocaleString()}</td>
+        <td>${escapeHTML(trade.pair)}</td>
+        <td>${escapeHTML(setupMeta(trade).name || "--")}</td>
+        <td>${escapeHTML(trade.direction)}</td>
+        <td>${trade.entry}</td>
+        <td>${trade.exit}</td>
+        <td>${closedQuantity.toFixed(2)}</td>
+        <td>${remainingQuantity.toFixed(2)}</td>
+        <td>${fmtMoney(tradeBrokerage(trade))}</td>
+        <td class="${netTradePnlInr(trade) >= 0 ? "profit" : "loss"}">${fmtMoney(netTradePnlInr(trade))}</td>
+        <td>${escapeHTML(trade.emotion)}</td>
+        <td class="table-row-actions">
+          <button class="mini-btn" data-edit-trade="${trade.id}">Edit</button>
+          <button class="mini-btn" data-delete-trade="${trade.id}">Delete</button>
+        </td>
+      </tr>
+    `;
+  }).join("") || `<tr><td colspan="12">${empty("No trades match the current filters.")}</td></tr>`;
 }
 
 function tradeRowCard(trade) {
@@ -482,6 +493,11 @@ function encodeTradePayload(form) {
   const setupId = data.setup_tag;
   const setup = state.playbook.find((item) => item.id === setupId);
   delete data.setup_tag;
+  const positionSize = Number(data.position_size || 0);
+  const closedQuantity = Number(data.closed_quantity || 0);
+  data.position_size = positionSize;
+  data.closed_quantity = closedQuantity > 0 ? closedQuantity : positionSize;
+  data.remaining_quantity = Math.max(0, positionSize - Number(data.closed_quantity || 0));
   const reason = String(data.trade_reason || "").replace(setupPrefix, "").trim();
   data.trade_reason = setup ? `[Setup: ${setup.id}] ${reason}`.trim() : reason;
   return data;
@@ -1593,6 +1609,8 @@ async function saveTrade(event) {
       exit: Number(data.exit || 0),
       stop_loss: Number(data.stop_loss || 0),
       position_size: Number(data.position_size || 0),
+      closed_quantity: Number(data.closed_quantity || 0),
+      remaining_quantity: Number(data.remaining_quantity || 0),
       pnl: Number(data.pnl || 0),
       brokerage: Number(data.brokerage || 0),
       risk_reward: Number(data.risk_reward || 0),
@@ -1623,8 +1641,11 @@ function editTrade(id) {
     form.elements[key].value = key === "timestamp" ? value.slice(0, 16) : value;
   });
   const meta = setupMeta(trade);
+  const { closedQuantity, remainingQuantity } = tradeQuantitySummary(trade);
   form.elements.setup_tag.value = state.playbook.some((setup) => setup.id === meta.id) ? meta.id : "";
   form.elements.trade_reason.value = meta.reason;
+  form.elements.closed_quantity.value = closedQuantity.toFixed(2);
+  form.elements.remaining_quantity.value = remainingQuantity.toFixed(2);
   qs("#tradeFormTitle").textContent = "Edit Trade Entry";
   qs("#cancelEditTrade").classList.remove("hidden");
   resetChecklist(true);
@@ -1843,6 +1864,12 @@ function updateTradeDerivedFields(form) {
   if (!hasTradeMath) return;
   form.elements.pnl.value = pnlUsd.toFixed(2);
   form.elements.risk_reward.value = riskReward.toFixed(2);
+  if (form.elements.closed_quantity && form.elements.remaining_quantity) {
+    const rawClosedQuantity = form.elements.closed_quantity.value;
+    const closedQuantity = rawClosedQuantity === "" ? size : Number(rawClosedQuantity || 0);
+    const remainingQuantity = Math.max(0, size - closedQuantity);
+    form.elements.remaining_quantity.value = remainingQuantity.toFixed(2);
+  }
 }
 
 function renderRiskPreview() {
@@ -1890,7 +1917,7 @@ function exportTradesCsv() {
     toast("No trades to export.", "danger");
     return;
   }
-  const headers = ["time", "pair", "setup", "direction", "entry", "exit", "stop_loss", "position_size", "pnl_usd", "brokerage_inr", "net_pnl_inr", "risk_reward", "emotion", "reason", "notes"];
+  const headers = ["time", "pair", "setup", "direction", "entry", "exit", "stop_loss", "position_size", "closed_quantity", "remaining_quantity", "pnl_usd", "brokerage_inr", "net_pnl_inr", "risk_reward", "emotion", "reason", "notes"];
   const csv = [
     headers.join(","),
     ...rows.map((trade) => headers.map((key) => {

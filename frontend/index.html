@@ -167,6 +167,8 @@
                 <label>Exit<input name="exit" type="number" step="0.0001" required></label>
                 <label>Stop Loss<input name="stop_loss" type="number" step="0.0001" required></label>
                 <label>Position Size<input name="position_size" type="number" step="0.01" required></label>
+                <label>Closed Quantity<input name="closed_quantity" type="number" step="0.01" placeholder="Leave blank for full close"></label>
+                <label>Remaining Quantity<input name="remaining_quantity" type="number" step="0.01" readonly></label>
                 <label>P/L (Delta USD)<input name="pnl" type="number" step="0.01" required></label>
                 <label>Brokerage INR<input name="brokerage" type="number" step="0.01" value="0"></label>
                 <label>Risk Reward (Auto)<input name="risk_reward" type="number" step="0.01" required></label>
@@ -201,7 +203,7 @@
               </div>
               <div class="table-wrap">
                 <table>
-                  <thead><tr><th>Time</th><th>Pair</th><th>Setup</th><th>Side</th><th>Entry</th><th>Exit</th><th>Brokerage</th><th>Net P/L INR</th><th>Emotion</th><th></th></tr></thead>
+                  <thead><tr><th>Time</th><th>Pair</th><th>Setup</th><th>Side</th><th>Entry</th><th>Exit</th><th>Closed Qty</th><th>Open Qty</th><th>Brokerage</th><th>Net P/L INR</th><th>Emotion</th><th></th></tr></thead>
                   <tbody id="tradeRows"></tbody>
                 </table>
               </div>

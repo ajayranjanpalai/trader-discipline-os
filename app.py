@@ -40,6 +40,10 @@ def ensure_trade_columns():
             return
         if "brokerage" not in columns:
             connection.execute(text("ALTER TABLE trades ADD COLUMN brokerage FLOAT DEFAULT 0"))
+        if "closed_quantity" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN closed_quantity FLOAT DEFAULT 0"))
+        if "remaining_quantity" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_quantity FLOAT DEFAULT 0"))
 
 
 def create_app():

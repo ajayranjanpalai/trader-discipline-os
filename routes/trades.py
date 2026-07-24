@@ -25,13 +25,22 @@ def _trade_fields(data):
     missing = [field for field in required if data.get(field) in (None, "")]
     if missing:
         raise ValueError(f"Missing required fields: {', '.join(missing)}")
+
+    position_size = float(data["position_size"])
+    closed_quantity_raw = data.get("closed_quantity")
+    closed_quantity = position_size if closed_quantity_raw in (None, "") else float(closed_quantity_raw)
+    if closed_quantity > position_size:
+        raise ValueError("Closed quantity cannot exceed position size")
+
     return {
         "pair": str(data["pair"]).upper(),
         "direction": str(data["direction"]).lower(),
         "entry": float(data["entry"]),
         "exit": float(data["exit"]),
         "stop_loss": float(data["stop_loss"]),
-        "position_size": float(data["position_size"]),
+        "position_size": position_size,
+        "closed_quantity": closed_quantity,
+        "remaining_quantity": max(0.0, position_size - closed_quantity),
         "pnl": float(data["pnl"]),
         "brokerage": float(data.get("brokerage") or 0),
         "risk_reward": float(data["risk_reward"]),

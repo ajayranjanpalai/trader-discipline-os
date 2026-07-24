@@ -14,6 +14,8 @@ class Trade(db.Model):
     exit = db.Column(db.Float, nullable=False)
     stop_loss = db.Column(db.Float, nullable=False)
     position_size = db.Column(db.Float, nullable=False)
+    closed_quantity = db.Column(db.Float, default=0.0)
+    remaining_quantity = db.Column(db.Float, default=0.0)
     pnl = db.Column(db.Float, nullable=False)
     brokerage = db.Column(db.Float, default=0.0)
     risk_reward = db.Column(db.Float, nullable=False)
@@ -33,6 +35,8 @@ class Trade(db.Model):
             "exit": self.exit,
             "stop_loss": self.stop_loss,
             "position_size": self.position_size,
+            "closed_quantity": self.closed_quantity or 0,
+            "remaining_quantity": self.remaining_quantity or 0,
             "pnl": self.pnl,
             "brokerage": self.brokerage or 0,
             "risk_reward": self.risk_reward,
