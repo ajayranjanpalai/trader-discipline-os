@@ -54,7 +54,7 @@ def validate_trade_day(user_id, trade_fields, exclude_trade_id=None):
     trades = day_trades(user_id, trade_fields["timestamp"], exclude_trade_id)
     candidate = type("CandidateTrade", (), trade_fields)()
     candidate.id = exclude_trade_id
-    combined = sorted([*trades, candidate], key=lambda trade: trade.timestamp)
+    combined = sorted([*trades, candidate], key=lambda trade: trade.timestamp or datetime.min)
 
     if len(combined) > 2:
         return False, "DAILY_LIMIT", "Max 2 trades reached for this trade date."

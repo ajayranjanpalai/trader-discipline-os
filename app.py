@@ -1,7 +1,6 @@
 from flask import Flask, send_from_directory
 from flask_cors import CORS
-from sqlalchemy import event
-from sqlalchemy import text
+from sqlalchemy import event, inspect, text
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -19,12 +18,11 @@ from services.noon_task_scheduler import start_noon_task_email_scheduler
 
 
 def ensure_task_columns():
-    if db.engine.url.drivername != "sqlite":
+    inspector = inspect(db.engine)
+    if "tasks" not in inspector.get_table_names():
         return
+    columns = {col["name"] for col in inspector.get_columns("tasks")}
     with db.engine.begin() as connection:
-        columns = {row[1] for row in connection.execute(text("PRAGMA table_info(tasks)"))}
-        if not columns:
-            return
         if "task_scope" not in columns:
             connection.execute(text("ALTER TABLE tasks ADD COLUMN task_scope VARCHAR(20) DEFAULT 'today'"))
         if "due_date" not in columns:
@@ -32,12 +30,11 @@ def ensure_task_columns():
 
 
 def ensure_trade_columns():
-    if db.engine.url.drivername != "sqlite":
+    inspector = inspect(db.engine)
+    if "trades" not in inspector.get_table_names():
         return
+    columns = {col["name"] for col in inspector.get_columns("trades")}
     with db.engine.begin() as connection:
-        columns = {row[1] for row in connection.execute(text("PRAGMA table_info(trades)"))}
-        if not columns:
-            return
         if "brokerage" not in columns:
             connection.execute(text("ALTER TABLE trades ADD COLUMN brokerage FLOAT DEFAULT 0"))
         if "closed_quantity" not in columns:
@@ -72,7 +69,8 @@ def create_app():
         return {"error": "Resource not found"}, 404
 
     @app.errorhandler(500)
-    def server_error(_error):
+    def server_error(error):
+        app.logger.error("Unhandled server exception: %s", error, exc_info=True)
         return {"error": "Unexpected server error"}, 500
 
     with app.app_context():
@@ -80,8 +78,8 @@ def create_app():
             @event.listens_for(db.engine, "connect")
             def set_sqlite_pragmas(dbapi_connection, _connection_record):
                 cursor = dbapi_connection.cursor()
-                cursor.execute("PRAGMA journal_mode=OFF")
-                cursor.execute("PRAGMA synchronous=OFF")
+                cursor.execute("PRAGMA journal_mode=WAL")
+                cursor.execute("PRAGMA busy_timeout=5000")
                 cursor.close()
 
         db.create_all()

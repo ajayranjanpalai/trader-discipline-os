@@ -17,7 +17,10 @@ def _payload():
 def _parse_time(value):
     if not value:
         return datetime.utcnow()
-    return datetime.fromisoformat(value.replace("Z", "+00:00")).replace(tzinfo=None)
+    try:
+        return datetime.fromisoformat(str(value).replace("Z", "+00:00")).replace(tzinfo=None)
+    except (ValueError, TypeError, AttributeError):
+        raise ValueError("Invalid timestamp format. Expected ISO format.")
 
 
 def _trade_fields(data):
@@ -78,12 +81,16 @@ def add_trade():
         db.session.commit()
         return {"error": message, "discipline": status_for_user(user_id)}, 403
 
-    trade = Trade(user_id=user_id, **fields)
-    db.session.add(trade)
-    net_pnl = (trade.pnl * DELTA_USD_INR_RATE) - (trade.brokerage or 0)
-    severity = "success" if net_pnl > 0 else "warning"
-    log_event(user_id, "TRADE_LOGGED", f"{trade.pair} {trade.direction} logged with net P/L INR {net_pnl:.2f}.", severity)
-    db.session.commit()
+    try:
+        trade = Trade(user_id=user_id, **fields)
+        db.session.add(trade)
+        net_pnl = (trade.pnl * DELTA_USD_INR_RATE) - (trade.brokerage or 0)
+        severity = "success" if net_pnl > 0 else "warning"
+        log_event(user_id, "TRADE_LOGGED", f"{trade.pair} {trade.direction} logged with net P/L INR {net_pnl:.2f}.", severity)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        raise
     return {"trade": trade.to_dict(), "discipline": status_for_user(user_id)}, 201
 
 
