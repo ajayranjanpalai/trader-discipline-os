@@ -321,16 +321,44 @@ function buildLocalAnalytics() {
   const startingCap = capitalSummary().starting_capital;
   let running = startingCap;
   const equity = [];
-  trades.forEach((trade) => {
-    running += netTradePnlInr(trade);
-    const dateObj = new Date(trade.timestamp);
+
+  if (trades.length > 0) {
+    const firstTradeDate = new Date(trades[0].timestamp);
+    const startDate = new Date(firstTradeDate.getTime() - 24 * 60 * 60 * 1000);
     equity.push({
-      label: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-      date: dateObj,
-      value: running,
+      label: startDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+      date: startDate,
+      value: startingCap,
       type: "equity",
     });
-  });
+
+    trades.forEach((trade) => {
+      running += netTradePnlInr(trade);
+      const dateObj = new Date(trade.timestamp);
+      equity.push({
+        label: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+        date: dateObj,
+        value: running,
+        type: "equity",
+      });
+    });
+  } else {
+    const now = new Date();
+    const prev = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    equity.push({
+      label: prev.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+      date: prev,
+      value: startingCap,
+      type: "equity",
+    });
+    equity.push({
+      label: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+      date: now,
+      value: capitalSummary().current_capital,
+      type: "equity",
+    });
+  }
+
   (state.capital?.transactions || []).forEach((tx) => {
     if (tx.timestamp) {
       const dateObj = new Date(tx.timestamp);
@@ -1618,14 +1646,12 @@ function renderTradingEquityChart(equity) {
   }
 
   if (!filtered.length || filtered.length < 2) {
-    const baseVal = capitalSummary().current_capital || 2000;
-    const startVal = capitalSummary().starting_capital || 1800;
-    const d1 = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
-    const d2 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    const currVal = capitalSummary().current_capital;
+    const startVal = capitalSummary().starting_capital;
+    const d1 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
     filtered = [
       { label: d1.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: startVal, type: "equity" },
-      { label: d2.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: Math.round((startVal + baseVal) / 2), type: "deposit" },
-      { label: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: baseVal, type: "equity" },
+      { label: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: currVal, type: "equity" },
     ];
   }
 
