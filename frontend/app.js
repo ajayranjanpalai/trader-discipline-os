@@ -265,16 +265,16 @@ function hydrateListsFromAnalytics() {
   const analyticsCapital = state.analytics?.capital;
   const summary = state.analytics?.summary || {};
 
-  if (Array.isArray(lists.trades) && lists.trades.length > state.trades.length) {
+  if (Array.isArray(lists.trades) && (!state.trades || !state.trades.length || lists.trades.length >= state.trades.length)) {
     state.trades = lists.trades;
   }
-  if (Array.isArray(lists.expenses) && lists.expenses.length > state.expenses.length) {
+  if (Array.isArray(lists.expenses) && (!state.expenses || !state.expenses.length || lists.expenses.length >= state.expenses.length)) {
     state.expenses = lists.expenses;
   }
-  if (Array.isArray(lists.tasks) && lists.tasks.length > state.tasks.length) {
+  if (Array.isArray(lists.tasks) && (!state.tasks || !state.tasks.length || lists.tasks.length >= state.tasks.length)) {
     state.tasks = lists.tasks;
   }
-  if (analyticsCapital && (!state.capital || (analyticsCapital.transactions || []).length > (state.capital.transactions || []).length)) {
+  if (analyticsCapital && (!state.capital || (analyticsCapital.transactions || []).length >= (state.capital.transactions || []).length)) {
     state.capital = analyticsCapital;
   } else if (!state.capital && (summary.starting_capital || summary.current_capital)) {
     state.capital = { summary, transactions: [] };
@@ -434,117 +434,176 @@ function refreshLocalAnalytics() {
   cacheState();
 }
 
+function safeRender(fn, name) {
+  try {
+    fn();
+  } catch (error) {
+    console.error(`Error rendering ${name}:`, error);
+  }
+}
+
 function renderAll() {
-  renderDiscipline();
-  renderMetrics();
-  renderCommandBriefing();
-  renderTrades();
-  renderExpenses();
-  renderCapital();
-  renderTasks();
-  renderInsights();
-  renderSessionReview();
-  renderDailyPlan();
-  renderPlaybook();
-  renderPositionCalculator();
-  renderRiskDesk();
-  renderTicker();
-  renderCharts();
-  renderRiskPreview();
-  renderTaskClock();
+  safeRender(renderDiscipline, "renderDiscipline");
+  safeRender(renderMetrics, "renderMetrics");
+  safeRender(renderCommandBriefing, "renderCommandBriefing");
+  safeRender(renderTrades, "renderTrades");
+  safeRender(renderExpenses, "renderExpenses");
+  safeRender(renderCapital, "renderCapital");
+  safeRender(renderTasks, "renderTasks");
+  safeRender(renderInsights, "renderInsights");
+  safeRender(renderSessionReview, "renderSessionReview");
+  safeRender(renderDailyPlan, "renderDailyPlan");
+  safeRender(renderPlaybook, "renderPlaybook");
+  safeRender(renderPositionCalculator, "renderPositionCalculator");
+  safeRender(renderRiskDesk, "renderRiskDesk");
+  safeRender(renderTicker, "renderTicker");
+  safeRender(renderCharts, "renderCharts");
+  safeRender(renderRiskPreview, "renderRiskPreview");
+  safeRender(renderTaskClock, "renderTaskClock");
 }
 
 function renderDiscipline() {
   const d = state.discipline || { score: "--", message: "Discipline engine ready.", allowed: true, today_count: 0 };
-  qs("#disciplineScore").textContent = typeof d.score === "number" ? `${d.score}%` : d.score;
-  qs("#mToday").textContent = `${d.today_count || 0} / 2 today`;
-  qs("#ruleStatus").textContent = d.message || "Discipline engine ready.";
-  qs("#riskState").textContent = d.allowed ? "Clear" : "Locked";
-  qs("#riskState").className = d.allowed ? "profit" : "loss";
+  const scoreEl = qs("#disciplineScore");
+  if (scoreEl) scoreEl.textContent = typeof d.score === "number" ? `${d.score}%` : d.score;
+  const todayEl = qs("#mToday");
+  if (todayEl) todayEl.textContent = `${d.today_count || 0} / 2 today`;
+  const ruleEl = qs("#ruleStatus");
+  if (ruleEl) ruleEl.textContent = d.message || "Discipline engine ready.";
+  const riskStateEl = qs("#riskState");
+  if (riskStateEl) {
+    riskStateEl.textContent = d.allowed ? "Clear" : "Locked";
+    riskStateEl.className = d.allowed ? "profit" : "loss";
+  }
   const alert = qs("#disciplineAlert");
-  alert.className = `alert show ${d.allowed ? "success" : "danger"}`;
-  alert.textContent = d.message || "Discipline engine ready.";
+  if (alert) {
+    alert.className = `alert show ${d.allowed ? "success" : "danger"}`;
+    alert.textContent = d.message || "Discipline engine ready.";
+  }
 }
 
 function renderMetrics() {
   const summary = state.analytics?.summary || {};
-  qs("#mPnl").textContent = fmtMoney(summary.total_pnl);
-  qs("#mPnl").className = summary.total_pnl >= 0 ? "profit" : "loss";
-  qs("#mWinRate").textContent = `${summary.win_rate || 0}%`;
-  qs("#mTrades").textContent = summary.total_trades || state.trades.length || 0;
+  const pnlEl = qs("#mPnl");
+  if (pnlEl) {
+    pnlEl.textContent = fmtMoney(summary.total_pnl);
+    pnlEl.className = summary.total_pnl >= 0 ? "profit" : "loss";
+  }
+  const winRateEl = qs("#mWinRate");
+  if (winRateEl) winRateEl.textContent = `${summary.win_rate || 0}%`;
+  const tradesEl = qs("#mTrades");
+  if (tradesEl) tradesEl.textContent = summary.total_trades || (state.trades || []).length || 0;
   const fit = playbookStats();
-  qs("#mPlaybookFit").textContent = `${fit.fitRate}%`;
-  qs("#mPlaybookCount").textContent = `${fit.tagged} tagged trade${fit.tagged === 1 ? "" : "s"}`;
-  qs("#aAvgProfit").textContent = fmtMoney(summary.avg_profit);
-  qs("#aAvgLoss").textContent = fmtMoney(summary.avg_loss);
-  qs("#aRR").textContent = summary.risk_reward_ratio || 0;
-  qs("#aBest").textContent = fmtMoney(summary.best_trade);
-  qs("#quote").textContent = quotes[new Date().getDate() % quotes.length];
+  const fitEl = qs("#mPlaybookFit");
+  if (fitEl) fitEl.textContent = `${fit.fitRate}%`;
+  const countEl = qs("#mPlaybookCount");
+  if (countEl) countEl.textContent = `${fit.tagged} tagged trade${fit.tagged === 1 ? "" : "s"}`;
+  const avgProfEl = qs("#aAvgProfit");
+  if (avgProfEl) avgProfEl.textContent = fmtMoney(summary.avg_profit);
+  const avgLossEl = qs("#aAvgLoss");
+  if (avgLossEl) avgLossEl.textContent = fmtMoney(summary.avg_loss);
+  const rrEl = qs("#aRR");
+  if (rrEl) rrEl.textContent = summary.risk_reward_ratio || 0;
+  const bestEl = qs("#aBest");
+  if (bestEl) bestEl.textContent = fmtMoney(summary.best_trade);
+  const quoteEl = qs("#quote");
+  if (quoteEl) quoteEl.textContent = quotes[new Date().getDate() % quotes.length];
 
   const todayKey = new Date().toDateString();
-  const todayNet = state.trades
-    .filter((trade) => new Date(trade.timestamp).toDateString() === todayKey)
+  const todayNet = (state.trades || [])
+    .filter((trade) => trade && new Date(trade.timestamp).toDateString() === todayKey)
     .reduce((sum, trade) => sum + netTradePnlInr(trade), 0);
-  qs("#todayNet").textContent = fmtMoney(todayNet);
-  qs("#todayNet").className = todayNet >= 0 ? "profit" : "loss";
+  const todayNetEl = qs("#todayNet");
+  if (todayNetEl) {
+    todayNetEl.textContent = fmtMoney(todayNet);
+    todayNetEl.className = todayNet >= 0 ? "profit" : "loss";
+  }
 
-  qs("#bestSetup").textContent = fit.best ? `${fit.best.name} ${fmtMoney(fit.best.avg)}` : "--";
+  const bestSetupEl = qs("#bestSetup");
+  if (bestSetupEl) bestSetupEl.textContent = fit.best ? `${fit.best.name} ${fmtMoney(fit.best.avg)}` : "--";
   const todayPlan = getTodayPlan();
-  qs("#planState").textContent = todayPlan ? todayPlan.bias : "Not Set";
-  qs("#planState").className = todayPlan ? "profit" : "loss";
+  const planStateEl = qs("#planState");
+  if (planStateEl) {
+    planStateEl.textContent = todayPlan ? todayPlan.bias : "Not Set";
+    planStateEl.className = todayPlan ? "profit" : "loss";
+  }
 }
 
 function renderTrades() {
   const recent = qs("#recentTrades");
-  recent.innerHTML = (state.trades.slice(0, 5).map(tradeRowCard).join("")) || empty("No trades logged yet.");
+  if (recent) {
+    recent.innerHTML = ((state.trades || []).slice(0, 5).map(tradeRowCard).join("")) || empty("No trades logged yet.");
+  }
   renderEmotionFilterOptions();
   const visibleTrades = filteredTrades();
-  qs("#tradeCountLabel").textContent = `${visibleTrades.length} shown / ${state.trades.length} logged`;
-  qs("#tradeRows").innerHTML = visibleTrades.map((trade) => {
-    const { closedQuantity, remainingQuantity } = tradeQuantitySummary(trade);
-    const hasRemainingExit = trade.remaining_exit && Number(trade.remaining_exit) > 0 && remainingQuantity > 0;
-    const exitDisplay = hasRemainingExit ? `${trade.exit} / Rest: ${trade.remaining_exit}` : trade.exit;
-    return `
-      <tr>
-        <td>${new Date(trade.timestamp).toLocaleString()}</td>
-        <td>${escapeHTML(trade.pair)}</td>
-        <td>${escapeHTML(setupMeta(trade).name || "--")}</td>
-        <td>${escapeHTML(trade.direction)}</td>
-        <td>${trade.entry}</td>
-        <td>${exitDisplay}</td>
-        <td>${closedQuantity.toFixed(2)}</td>
-        <td>${remainingQuantity.toFixed(2)}</td>
-        <td>${fmtMoney(tradeBrokerage(trade))}</td>
-        <td class="${netTradePnlInr(trade) >= 0 ? "profit" : "loss"}">${fmtMoney(netTradePnlInr(trade))}</td>
-        <td>${escapeHTML(trade.emotion)}</td>
-        <td class="table-row-actions">
-          <button class="mini-btn" data-edit-trade="${trade.id}">Edit</button>
-          <button class="mini-btn" data-delete-trade="${trade.id}">Delete</button>
-        </td>
-      </tr>
-    `;
-  }).join("") || `<tr><td colspan="12">${empty("No trades match the current filters.")}</td></tr>`;
+  const countLabel = qs("#tradeCountLabel");
+  if (countLabel) {
+    countLabel.textContent = `${visibleTrades.length} shown / ${(state.trades || []).length} logged`;
+  }
+  const tradeRows = qs("#tradeRows");
+  if (tradeRows) {
+    tradeRows.innerHTML = visibleTrades.map((trade) => {
+      const { closedQuantity, remainingQuantity } = tradeQuantitySummary(trade);
+      const hasRemainingExit = trade.remaining_exit && Number(trade.remaining_exit) > 0 && remainingQuantity > 0;
+      const exitDisplay = hasRemainingExit ? `${trade.exit} / Rest: ${trade.remaining_exit}` : trade.exit;
+      const timestampStr = trade.timestamp ? new Date(trade.timestamp).toLocaleString() : "--";
+      const netPnl = netTradePnlInr(trade);
+      const brokerage = tradeBrokerage(trade);
+      const setupName = setupMeta(trade).name;
+      return `
+        <tr>
+          <td>${timestampStr}</td>
+          <td>${escapeHTML(trade.pair || "--")}</td>
+          <td>${escapeHTML(setupName || "--")}</td>
+          <td>${escapeHTML(trade.direction || "--")}</td>
+          <td>${trade.entry ?? "--"}</td>
+          <td>${exitDisplay ?? "--"}</td>
+          <td>${closedQuantity.toFixed(2)}</td>
+          <td>${remainingQuantity.toFixed(2)}</td>
+          <td>${fmtMoney(brokerage)}</td>
+          <td class="${netPnl >= 0 ? "profit" : "loss"}">${fmtMoney(netPnl)}</td>
+          <td>${escapeHTML(trade.emotion || "--")}</td>
+          <td class="table-row-actions">
+            <button class="mini-btn" data-edit-trade="${trade.id}">Edit</button>
+            <button class="mini-btn" data-delete-trade="${trade.id}">Delete</button>
+          </td>
+        </tr>
+      `;
+    }).join("") || `<tr><td colspan="12">${empty("No trades match the current filters.")}</td></tr>`;
+  }
 }
 
 function tradeRowCard(trade) {
+  if (!trade) return "";
   const setup = setupMeta(trade).name;
+  const netPnl = netTradePnlInr(trade);
+  const pairStr = escapeHTML(trade.pair || "Unknown");
+  const emotionStr = escapeHTML(trade.emotion || "");
+  const setupStr = escapeHTML(setup || trade.direction || "");
+  const subText = setupStr && emotionStr ? `${setupStr} / ${emotionStr}` : setupStr || emotionStr || "--";
   return `
     <div class="item-row">
-      <div><b>${escapeHTML(trade.pair)}</b><br><small>${escapeHTML(setup ? `${setup} / ${trade.emotion}` : `${trade.direction} / ${trade.emotion}`)}</small></div>
-      <strong class="${netTradePnlInr(trade) >= 0 ? "profit" : "loss"}">${fmtMoney(netTradePnlInr(trade))}</strong>
+      <div><b>${pairStr}</b><br><small>${subText}</small></div>
+      <strong class="${netPnl >= 0 ? "profit" : "loss"}">${fmtMoney(netPnl)}</strong>
     </div>
   `;
 }
 
 function filteredTrades() {
   const query = state.filters.search.trim().toLowerCase();
-  return state.trades.filter((trade) => {
+  return (state.trades || []).filter((trade) => {
+    if (!trade) return false;
+    const netPnl = netTradePnlInr(trade);
     const outcomeMatch =
       state.filters.outcome === "all" ||
-      (state.filters.outcome === "win" && netTradePnlInr(trade) > 0) ||
-      (state.filters.outcome === "loss" && netTradePnlInr(trade) < 0);
-    const emotionMatch = state.filters.emotion === "all" || trade.emotion === state.filters.emotion;
-    const searchText = [trade.pair, trade.direction, trade.emotion, setupMeta(trade).name, trade.trade_reason, trade.notes].join(" ").toLowerCase();
+      (state.filters.outcome === "win" && netPnl > 0) ||
+      (state.filters.outcome === "loss" && netPnl < 0);
+    const emotionMatch = state.filters.emotion === "all" || String(trade.emotion || "").toLowerCase() === state.filters.emotion.toLowerCase();
+    const setupName = setupMeta(trade).name || "";
+    const searchText = [trade.pair, trade.direction, trade.emotion, setupName, trade.trade_reason, trade.notes]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
     return outcomeMatch && emotionMatch && (!query || searchText.includes(query));
   });
 }
@@ -553,7 +612,12 @@ function setupMeta(trade) {
   const reason = trade?.trade_reason || "";
   const match = reason.match(setupPrefix);
   const idOrName = match?.[1]?.trim() || "";
-  const setup = state.playbook.find((item) => item.id === idOrName || item.name.toLowerCase() === idOrName.toLowerCase());
+  if (!idOrName) {
+    return { id: "", name: "", reason };
+  }
+  const setup = (state.playbook || []).find(
+    (item) => item && (item.id === idOrName || String(item.name || "").toLowerCase() === idOrName.toLowerCase())
+  );
   return {
     id: setup?.id || idOrName,
     name: setup?.name || idOrName,
@@ -579,7 +643,8 @@ function encodeTradePayload(form) {
 
 function playbookStats() {
   const grouped = new Map();
-  state.trades.forEach((trade) => {
+  (state.trades || []).forEach((trade) => {
+    if (!trade) return;
     const meta = setupMeta(trade);
     if (!meta.name) return;
     const current = grouped.get(meta.id) || { name: meta.name, count: 0, wins: 0, pnl: 0 };
@@ -594,7 +659,8 @@ function playbookStats() {
     winRate: item.count ? Math.round((item.wins / item.count) * 100) : 0,
   }));
   const tagged = setups.reduce((sum, item) => sum + item.count, 0);
-  const fitRate = state.trades.length ? Math.round((tagged / state.trades.length) * 100) : 0;
+  const totalCount = (state.trades || []).length;
+  const fitRate = totalCount ? Math.round((tagged / totalCount) * 100) : 0;
   const best = setups.sort((a, b) => b.avg - a.avg)[0];
   return { tagged, fitRate, best };
 }
@@ -605,20 +671,25 @@ function persistPlaybook() {
 
 function renderPlaybook() {
   const select = qs("#setupTag");
-  if (!select) return;
-  const current = select.value;
-  select.innerHTML = `<option value="">No setup tag</option>${state.playbook.map((setup) => `<option value="${escapeHTML(setup.id)}">${escapeHTML(setup.name)}</option>`).join("")}`;
-  select.value = state.playbook.some((setup) => setup.id === current) ? current : "";
-  qs("#playbookCount").textContent = `${state.playbook.length} active`;
-  qs("#playbookList").innerHTML = state.playbook.map((setup) => `
-    <div class="playbook-item">
-      <div>
-        <strong>${escapeHTML(setup.name)}</strong>
-        <span>${escapeHTML(setup.criteria)}</span>
+  if (select) {
+    const current = select.value;
+    select.innerHTML = `<option value="">No setup tag</option>${(state.playbook || []).map((setup) => `<option value="${escapeHTML(setup.id)}">${escapeHTML(setup.name || setup.id)}</option>`).join("")}`;
+    select.value = (state.playbook || []).some((setup) => setup && setup.id === current) ? current : "";
+  }
+  const countEl = qs("#playbookCount");
+  if (countEl) countEl.textContent = `${(state.playbook || []).length} active`;
+  const listEl = qs("#playbookList");
+  if (listEl) {
+    listEl.innerHTML = (state.playbook || []).map((setup) => `
+      <div class="playbook-item">
+        <div>
+          <strong>${escapeHTML(setup.name || setup.id || "Untitled")}</strong>
+          <span>${escapeHTML(setup.criteria || "No criteria provided.")}</span>
+        </div>
+        <button class="mini-btn" type="button" data-delete-setup="${escapeHTML(setup.id)}">Remove</button>
       </div>
-      <button class="mini-btn" type="button" data-delete-setup="${escapeHTML(setup.id)}">Remove</button>
-    </div>
-  `).join("") || empty("No setups saved yet.");
+    `).join("") || empty("No setups saved yet.");
+  }
 }
 
 function addPlaybookSetup() {
