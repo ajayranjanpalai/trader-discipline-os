@@ -310,6 +310,60 @@ function capitalSummary() {
   };
 }
 
+function equityPoint(dateObj, value, type = "equity") {
+  const date = new Date(dateObj);
+  return {
+    label: date.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+    date: date.toISOString(),
+    value,
+    type,
+  };
+}
+
+function buildTradingEquitySeries() {
+  const summary = capitalSummary();
+  const events = [];
+
+  state.trades.forEach((trade) => {
+    const date = new Date(trade.timestamp);
+    if (Number.isNaN(date.getTime())) return;
+    events.push({ date, delta: netTradePnlInr(trade), type: "equity" });
+  });
+
+  (state.capital?.transactions || []).forEach((transaction) => {
+    const date = new Date(transaction.created_at || transaction.timestamp);
+    if (Number.isNaN(date.getTime())) return;
+    const amount = Number(transaction.amount || 0);
+    events.push({
+      date,
+      delta: transaction.transaction_type === "withdrawal" ? -amount : amount,
+      type: transaction.transaction_type || "deposit",
+    });
+  });
+
+  events.sort((a, b) => a.date - b.date);
+
+  if (!events.length) {
+    const now = new Date();
+    const prev = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+    return [
+      equityPoint(prev, summary.starting_capital),
+      equityPoint(now, summary.current_capital),
+    ];
+  }
+
+  let running = summary.starting_capital;
+  const startDate = new Date(events[0].date.getTime() - 24 * 60 * 60 * 1000);
+  const equity = [equityPoint(startDate, running)];
+
+  events.forEach((event) => {
+    running += event.delta;
+    equity.push(equityPoint(event.date, running, event.type));
+  });
+
+  return equity;
+}
+
 function buildLocalAnalytics() {
   const trades = [...state.trades].sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   const pnlValues = trades.map(netTradePnlInr);
@@ -318,59 +372,6 @@ function buildLocalAnalytics() {
   const totalPnl = pnlValues.reduce((sum, pnl) => sum + pnl, 0);
   const daily = new Map();
   const emotion = new Map();
-  const startingCap = capitalSummary().starting_capital;
-  let running = startingCap;
-  const equity = [];
-
-  if (trades.length > 0) {
-    const firstTradeDate = new Date(trades[0].timestamp);
-    const startDate = new Date(firstTradeDate.getTime() - 24 * 60 * 60 * 1000);
-    equity.push({
-      label: startDate.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-      date: startDate,
-      value: startingCap,
-      type: "equity",
-    });
-
-    trades.forEach((trade) => {
-      running += netTradePnlInr(trade);
-      const dateObj = new Date(trade.timestamp);
-      equity.push({
-        label: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-        date: dateObj,
-        value: running,
-        type: "equity",
-      });
-    });
-  } else {
-    const now = new Date();
-    const prev = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-    equity.push({
-      label: prev.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-      date: prev,
-      value: startingCap,
-      type: "equity",
-    });
-    equity.push({
-      label: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-      date: now,
-      value: capitalSummary().current_capital,
-      type: "equity",
-    });
-  }
-
-  (state.capital?.transactions || []).forEach((tx) => {
-    if (tx.timestamp) {
-      const dateObj = new Date(tx.timestamp);
-      equity.push({
-        label: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
-        date: dateObj,
-        value: running,
-        type: tx.transaction_type || "deposit",
-      });
-    }
-  });
-  equity.sort((a, b) => (a.date || 0) - (b.date || 0));
 
   trades.forEach((trade) => {
     const day = new Date(trade.timestamp).toLocaleDateString();
@@ -396,7 +397,7 @@ function buildLocalAnalytics() {
       best_trade: pnlValues.length ? Math.max(...pnlValues) : 0,
     },
     charts: {
-      equity_curve: equity,
+      equity_curve: buildTradingEquitySeries(),
       daily_pl: [...daily.entries()].map(([label, value]) => ({ label, value })),
       win_loss: { wins: wins.length, losses: losses.length },
       emotion_performance: [...emotion.entries()].map(([label, value]) => ({ label, value })),
@@ -1739,7 +1740,7 @@ function renderTradingEquityChart(equity) {
 
 function renderCharts() {
   const charts = state.analytics?.charts || {};
-  const equity = charts.equity_curve || [];
+  const equity = buildTradingEquitySeries();
   const daily = charts.daily_pl || [];
   const emotion = charts.emotion_performance || [];
   const expenses = charts.expense_categories || [];

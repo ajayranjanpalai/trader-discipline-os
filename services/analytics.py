@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from models import CapitalTransaction, Expense, Trade
 
@@ -41,16 +41,54 @@ def capital_summary(user):
 def trading_analytics(user):
     trades = Trade.query.filter_by(user_id=user.id).order_by(Trade.timestamp.asc()).all()
     expenses = Expense.query.filter_by(user_id=user.id).all()
+    transactions = CapitalTransaction.query.filter_by(user_id=user.id).all()
     capital = capital_summary(user)
     pnl_values = [_pnl_inr(trade) for trade in trades]
     wins = [value for value in pnl_values if value > 0]
     losses = [value for value in pnl_values if value < 0]
 
-    equity = []
-    running = 0
+    equity_events = []
     for trade in trades:
-        running += _pnl_inr(trade)
-        equity.append({"label": trade.timestamp.strftime("%d %b"), "value": _money(running)})
+        equity_events.append((trade.timestamp, _pnl_inr(trade), "equity"))
+    for transaction in transactions:
+        amount = transaction.amount if transaction.transaction_type == "deposit" else -transaction.amount
+        equity_events.append((transaction.created_at, amount, transaction.transaction_type))
+
+    equity_events.sort(key=lambda event: event[0])
+    equity = []
+    running = capital["starting_capital"]
+    if equity_events:
+        start_date = equity_events[0][0] - timedelta(days=1)
+        equity.append({
+            "label": start_date.strftime("%d %b"),
+            "date": start_date.isoformat(),
+            "value": _money(running),
+            "type": "equity",
+        })
+        for timestamp, delta, event_type in equity_events:
+            running += delta
+            equity.append({
+                "label": timestamp.strftime("%d %b"),
+                "date": timestamp.isoformat(),
+                "value": _money(running),
+                "type": event_type,
+            })
+    else:
+        now = datetime.utcnow()
+        equity = [
+            {
+                "label": (now - timedelta(days=1)).strftime("%d %b"),
+                "date": (now - timedelta(days=1)).isoformat(),
+                "value": capital["starting_capital"],
+                "type": "equity",
+            },
+            {
+                "label": now.strftime("%d %b"),
+                "date": now.isoformat(),
+                "value": capital["current_capital"],
+                "type": "equity",
+            },
+        ]
 
     daily = defaultdict(float)
     weekly = defaultdict(float)
@@ -91,7 +129,7 @@ def trading_analytics(user):
             "total_expenses": _money(sum(expense.amount for expense in expenses)),
         },
         "charts": {
-            "equity_curve": equity or [{"label": datetime.utcnow().strftime("%d %b"), "value": 0}],
+            "equity_curve": equity,
             "daily_pl": [{"label": key, "value": _money(value)} for key, value in daily.items()],
             "weekly_pl": [{"label": key, "value": _money(value)} for key, value in weekly.items()],
             "monthly_pl": [{"label": key, "value": _money(value)} for key, value in monthly.items()],
