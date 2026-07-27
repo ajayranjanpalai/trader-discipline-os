@@ -1,9 +1,9 @@
-const CACHE_NAME = "tdos-shell-v12";
+const CACHE_NAME = "tdos-shell-v13";
 const APP_SHELL = [
   "/",
   "/index.html",
-  "/style.css?v=blue-finance-v3",
-  "/app.js?v=blue-finance-v3",
+  "/style.css?v=data-sync-v4",
+  "/app.js?v=data-sync-v4",
   "/manifest.webmanifest"
 ];
 
@@ -41,6 +41,20 @@ self.addEventListener("fetch", (event) => {
 
   if (new URL(request.url).origin !== location.origin) return;
   if (request.url.includes("/api/")) return;
+
+  const assetUrl = new URL(request.url);
+  const networkFirst = assetUrl.pathname.endsWith(".js") || assetUrl.pathname.endsWith(".css");
+
+  if (networkFirst) {
+    event.respondWith(
+      fetch(request).then((response) => {
+        const copy = response.clone();
+        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+        return response;
+      }).catch(() => caches.match(request))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(request).then((cached) => cached || fetch(request).then((response) => {
