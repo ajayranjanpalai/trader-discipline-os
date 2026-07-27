@@ -1,7 +1,7 @@
 from collections import defaultdict
 from datetime import datetime, timedelta
 
-from models import CapitalTransaction, Expense, Trade
+from models import CapitalTransaction, Expense, Task, Trade
 
 DELTA_USD_INR_RATE = 85
 
@@ -38,10 +38,73 @@ def capital_summary(user):
     }
 
 
+def _trade_dict(trade):
+    return {
+        "id": trade.id,
+        "pair": trade.pair,
+        "direction": trade.direction,
+        "entry": trade.entry,
+        "exit": trade.exit,
+        "remaining_exit": trade.remaining_exit,
+        "stop_loss": trade.stop_loss,
+        "position_size": trade.position_size,
+        "closed_quantity": trade.closed_quantity or 0,
+        "remaining_quantity": trade.remaining_quantity or 0,
+        "pnl": trade.pnl,
+        "brokerage": trade.brokerage or 0,
+        "risk_reward": trade.risk_reward,
+        "emotion": trade.emotion,
+        "trade_reason": trade.trade_reason or "",
+        "notes": trade.notes or "",
+        "timestamp": trade.timestamp.isoformat(),
+        "created_at": trade.created_at.isoformat(),
+    }
+
+
+def _expense_dict(expense):
+    return {
+        "id": expense.id,
+        "title": expense.title,
+        "amount": expense.amount,
+        "category": expense.category,
+        "payment_method": expense.payment_method,
+        "note": expense.note or "",
+        "timestamp": expense.timestamp.isoformat(),
+    }
+
+
+def _capital_transaction_dict(transaction):
+    return {
+        "id": transaction.id,
+        "transaction_type": transaction.transaction_type,
+        "amount": transaction.amount,
+        "note": transaction.note or "",
+        "created_at": transaction.created_at.isoformat(),
+    }
+
+
+def _task_dict(task):
+    completion_dates = {completion.completed_on.isoformat() for completion in task.completions}
+    if task.completed_at:
+        completion_dates.add(task.completed_at.date().isoformat())
+    return {
+        "id": task.id,
+        "title": task.title,
+        "category": task.category,
+        "task_scope": task.task_scope or "today",
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "completed": task.completed,
+        "completed_at": task.completed_at.isoformat() if task.completed_at else None,
+        "completion_dates": sorted(completion_dates),
+        "created_at": task.created_at.isoformat(),
+    }
+
+
 def trading_analytics(user):
     trades = Trade.query.filter_by(user_id=user.id).order_by(Trade.timestamp.asc()).all()
     expenses = Expense.query.filter_by(user_id=user.id).all()
     transactions = CapitalTransaction.query.filter_by(user_id=user.id).all()
+    tasks = Task.query.filter_by(user_id=user.id).order_by(Task.created_at.desc()).all()
     capital = capital_summary(user)
     pnl_values = [_pnl_inr(trade) for trade in trades]
     wins = [value for value in pnl_values if value > 0]
@@ -145,5 +208,14 @@ def trading_analytics(user):
             "expense_categories": [
                 {"label": key, "value": _money(value)} for key, value in expense_categories.items()
             ],
+        },
+        "capital": {
+            "summary": capital,
+            "transactions": [_capital_transaction_dict(transaction) for transaction in sorted(transactions, key=lambda item: item.created_at, reverse=True)],
+        },
+        "lists": {
+            "trades": [_trade_dict(trade) for trade in sorted(trades, key=lambda item: item.timestamp, reverse=True)],
+            "expenses": [_expense_dict(expense) for expense in sorted(expenses, key=lambda item: item.timestamp, reverse=True)],
+            "tasks": [_task_dict(task) for task in tasks],
         },
     }

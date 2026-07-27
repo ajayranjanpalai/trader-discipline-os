@@ -230,6 +230,7 @@ async function loadAll() {
     tasksFailed: tasks.status === "rejected",
     analyticsFailed: analytics.status === "rejected",
   });
+  hydrateListsFromAnalytics();
   renderAll();
 
   if (!failed.length) {
@@ -257,6 +258,27 @@ function hydrateOfflineState(sources = {}) {
   if (sources.tasksFailed && !state.tasks.length) state.tasks = storageJSON("tdos_cache_tasks", []);
   if (!state.discipline) state.discipline = buildLocalDiscipline();
   if (sources.analyticsFailed && !state.analytics) state.analytics = buildLocalAnalytics();
+}
+
+function hydrateListsFromAnalytics() {
+  const lists = state.analytics?.lists || {};
+  const analyticsCapital = state.analytics?.capital;
+  const summary = state.analytics?.summary || {};
+
+  if (Array.isArray(lists.trades) && lists.trades.length > state.trades.length) {
+    state.trades = lists.trades;
+  }
+  if (Array.isArray(lists.expenses) && lists.expenses.length > state.expenses.length) {
+    state.expenses = lists.expenses;
+  }
+  if (Array.isArray(lists.tasks) && lists.tasks.length > state.tasks.length) {
+    state.tasks = lists.tasks;
+  }
+  if (analyticsCapital && (!state.capital || (analyticsCapital.transactions || []).length > (state.capital.transactions || []).length)) {
+    state.capital = analyticsCapital;
+  } else if (!state.capital && (summary.starting_capital || summary.current_capital)) {
+    state.capital = { summary, transactions: [] };
+  }
 }
 
 function buildLocalDiscipline() {
