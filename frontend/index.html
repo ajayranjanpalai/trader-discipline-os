@@ -7,6 +7,7 @@
   <title>Trader Discipline Operating System</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style.css?v=blue-finance-v3">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div id="loader">
@@ -93,9 +94,34 @@
           <article class="metric-card"><span>Playbook Fit</span><strong id="mPlaybookFit">0%</strong><small id="mPlaybookCount">0 tagged trades</small></article>
         </div>
         <div class="dashboard-grid">
-          <section class="panel wide">
-            <div class="panel-head"><h3>Performance Overview</h3><span id="quote"></span></div>
-            <div class="chart-box"><canvas id="dashEquityChart"></canvas></div>
+          <section class="panel wide trading-equity-panel">
+            <div class="equity-filter-bar">
+              <button class="equity-filter-btn active" data-equity-range="7d">Last 7 days</button>
+              <button class="equity-filter-btn" data-equity-range="30d">Last 30 days</button>
+              <button class="equity-filter-btn" data-equity-range="all">Customize</button>
+            </div>
+            <div class="equity-card-body">
+              <div class="equity-header">
+                <h3 class="equity-title">TRADING EQUITY</h3>
+                <div class="equity-legend">
+                  <span class="legend-item"><span class="legend-icon sq-orange"></span> Trading Equity</span>
+                  <span class="legend-item"><span class="legend-icon ring-green"></span> Deposit</span>
+                  <span class="legend-item"><span class="legend-icon ring-red"></span> Withdrawal</span>
+                  <span class="legend-item"><span class="legend-icon ring-white"></span> Liquidation Fees</span>
+                </div>
+              </div>
+              <div class="equity-chart-wrapper">
+                <div class="y-axis-label">INR(₹)</div>
+                <div class="chart-box equity-chart-box">
+                  <canvas id="dashEquityChart"></canvas>
+                </div>
+              </div>
+              <ul class="equity-bullets">
+                <li>The chart will show data only for periods when there has been transactional activity in your account.</li>
+                <li>The chart updates once every 6 hours.</li>
+                <li>Referral income is not included in Trading Equity</li>
+              </ul>
+            </div>
           </section>
           <section class="panel">
             <div class="panel-head"><h3>Recent Trades</h3><button class="mini-btn" data-jump="journal">Add Trade</button></div>

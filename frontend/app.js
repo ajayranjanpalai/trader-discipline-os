@@ -318,11 +318,31 @@ function buildLocalAnalytics() {
   const totalPnl = pnlValues.reduce((sum, pnl) => sum + pnl, 0);
   const daily = new Map();
   const emotion = new Map();
-  let running = 0;
-  const equity = trades.map((trade) => {
+  const startingCap = capitalSummary().starting_capital;
+  let running = startingCap;
+  const equity = [];
+  trades.forEach((trade) => {
     running += netTradePnlInr(trade);
-    return { label: new Date(trade.timestamp).toLocaleDateString(), value: running };
+    const dateObj = new Date(trade.timestamp);
+    equity.push({
+      label: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+      date: dateObj,
+      value: running,
+      type: "equity",
+    });
   });
+  (state.capital?.transactions || []).forEach((tx) => {
+    if (tx.timestamp) {
+      const dateObj = new Date(tx.timestamp);
+      equity.push({
+        label: dateObj.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }),
+        date: dateObj,
+        value: running,
+        type: tx.transaction_type || "deposit",
+      });
+    }
+  });
+  equity.sort((a, b) => (a.date || 0) - (b.date || 0));
 
   trades.forEach((trade) => {
     const day = new Date(trade.timestamp).toLocaleDateString();
@@ -1389,6 +1409,21 @@ function chart(id, config) {
   state.charts[id] = new Chart(canvas, config);
 }
 
+function fmtChartK(value) {
+  const val = Number(value || 0);
+  if (val === 0) return "0";
+  const abs = Math.abs(val);
+  if (abs >= 1000000) {
+    const formatted = (val / 1000000).toFixed(1).replace(/\.0$/, "");
+    return `${formatted}M`;
+  }
+  if (abs >= 1000) {
+    const formatted = (val / 1000).toFixed(1).replace(/\.0$/, "");
+    return `${formatted}K`;
+  }
+  return String(Math.round(val));
+}
+
 function drawFallbackChart(canvas, config) {
   const box = canvas.parentElement;
   const width = Math.max(280, box.clientWidth || 640);
@@ -1403,7 +1438,7 @@ function drawFallbackChart(canvas, config) {
   const ctx = canvas.getContext("2d");
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
   ctx.clearRect(0, 0, width, height);
-  ctx.font = "12px Segoe UI, Arial, sans-serif";
+  ctx.font = "11px Inter, Segoe UI, Arial, sans-serif";
   ctx.lineWidth = 2;
 
   const dataset = config.data?.datasets?.[0] || {};
@@ -1413,6 +1448,67 @@ function drawFallbackChart(canvas, config) {
     ctx.fillStyle = "#686872";
     ctx.textAlign = "center";
     ctx.fillText("No chart data yet", width / 2, height / 2);
+    return;
+  }
+
+  if (canvas.id === "dashEquityChart") {
+    ctx.fillStyle = "#18191c";
+    ctx.fillRect(0, 0, width, height);
+
+    const padLeft = 45;
+    const padRight = 20;
+    const padTop = 20;
+    const padBottom = 30;
+    const minVal = Math.min(...values);
+    const maxVal = Math.max(...values);
+    const range = (maxVal - minVal) || 1;
+
+    const xFor = (i) => padLeft + (values.length === 1 ? (width - padLeft - padRight) / 2 : (i / (values.length - 1)) * (width - padLeft - padRight));
+    const yFor = (val) => height - padBottom - ((val - minVal) / range) * (height - padTop - padBottom);
+
+    // Horizontal grid lines and Y-ticks
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.07)";
+    ctx.fillStyle = "#94a3b8";
+    ctx.textAlign = "right";
+    for (let i = 0; i <= 4; i++) {
+      const val = minVal + (range * i) / 4;
+      const y = yFor(val);
+      ctx.beginPath();
+      ctx.moveTo(padLeft, y);
+      ctx.lineTo(width - padRight, y);
+      ctx.stroke();
+      ctx.fillText(fmtChartK(val), padLeft - 6, y + 4);
+    }
+
+    // Line curve
+    ctx.strokeStyle = "#3898EC";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    values.forEach((val, index) => {
+      const x = xFor(index);
+      const y = yFor(val);
+      if (index === 0) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    });
+    ctx.stroke();
+
+    // Data points & markers
+    values.forEach((val, index) => {
+      const x = xFor(index);
+      const y = yFor(val);
+      ctx.beginPath();
+      ctx.arc(x, y, 4, 0, Math.PI * 2);
+      ctx.fillStyle = "#3898EC";
+      ctx.fill();
+    });
+
+    // X Axis Labels
+    ctx.fillStyle = "#94a3b8";
+    ctx.textAlign = "center";
+    if (labels.length > 0) ctx.fillText(labels[0], padLeft + 15, height - 8);
+    if (labels.length > 2) ctx.fillText(labels[Math.floor(labels.length / 2)], width / 2, height - 8);
+    if (labels.length > 1) ctx.fillText(labels[labels.length - 1], width - padRight - 15, height - 8);
     return;
   }
 
@@ -1506,6 +1602,115 @@ function baseOptions(showLegend = false, moneyTicks = false) {
   };
 }
 
+function renderTradingEquityChart(equity) {
+  let filtered = [...equity];
+  const range = state.equityRange || "7d";
+  const now = new Date();
+
+  if (range === "7d") {
+    const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const byDate = filtered.filter((p) => !p.date || new Date(p.date) >= cutoff);
+    filtered = byDate.length >= 2 ? byDate : filtered.slice(-7);
+  } else if (range === "30d") {
+    const cutoff = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const byDate = filtered.filter((p) => !p.date || new Date(p.date) >= cutoff);
+    filtered = byDate.length >= 2 ? byDate : filtered.slice(-30);
+  }
+
+  if (!filtered.length || filtered.length < 2) {
+    const baseVal = capitalSummary().current_capital || 2000;
+    const startVal = capitalSummary().starting_capital || 1800;
+    const d1 = new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000);
+    const d2 = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000);
+    filtered = [
+      { label: d1.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: startVal, type: "equity" },
+      { label: d2.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: Math.round((startVal + baseVal) / 2), type: "deposit" },
+      { label: now.toLocaleDateString("en-GB", { day: "2-digit", month: "short" }), value: baseVal, type: "equity" },
+    ];
+  }
+
+  const labels = filtered.map((p) => p.label);
+  const values = filtered.map((p) => p.value);
+  const pointBorderColors = filtered.map((p) => {
+    if (p.type === "deposit") return "#10B981";
+    if (p.type === "withdrawal") return "#EF4444";
+    return "#3898EC";
+  });
+  const pointBackgroundColors = filtered.map((p) => {
+    if (p.type === "deposit" || p.type === "withdrawal") return "#18191c";
+    return "#3898EC";
+  });
+  const pointRadii = filtered.map((p) => (p.type && p.type !== "equity" ? 5 : 3));
+  const pointBorderWidths = filtered.map((p) => (p.type && p.type !== "equity" ? 2.5 : 1));
+
+  chart("dashEquityChart", {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Trading Equity",
+          data: values,
+          borderColor: "#3898EC",
+          borderWidth: 2.5,
+          backgroundColor: "rgba(56, 152, 236, 0.06)",
+          fill: true,
+          tension: 0.35,
+          pointRadius: pointRadii,
+          pointBorderWidth: pointBorderWidths,
+          pointBorderColor: pointBorderColors,
+          pointBackgroundColor: pointBackgroundColors,
+          pointHoverRadius: 6,
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          mode: "index",
+          intersect: false,
+          backgroundColor: "#23252a",
+          titleColor: "#94a3b8",
+          bodyColor: "#3898ec",
+          borderColor: "#353842",
+          borderWidth: 1,
+          callbacks: {
+            label: (context) => ` Equity: ₹${Number(context.raw || 0).toLocaleString()}`,
+          },
+        },
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          ticks: {
+            color: "#94a3b8",
+            font: { size: 11, weight: "500" },
+            maxRotation: 0,
+            autoSkip: true,
+            maxTicksLimit: 6,
+          },
+          border: { display: false },
+        },
+        y: {
+          grid: {
+            color: "rgba(255, 255, 255, 0.07)",
+            drawBorder: false,
+          },
+          ticks: {
+            color: "#94a3b8",
+            font: { size: 11, weight: "500" },
+            callback: (value) => fmtChartK(value),
+          },
+          border: { display: false },
+        },
+      },
+    },
+  });
+}
+
 function renderCharts() {
   const charts = state.analytics?.charts || {};
   const equity = charts.equity_curve || [];
@@ -1514,11 +1719,7 @@ function renderCharts() {
   const expenses = charts.expense_categories || [];
   const winLoss = charts.win_loss || { wins: 0, losses: 0 };
 
-  chart("dashEquityChart", {
-    type: "line",
-    data: { labels: equity.map((p) => p.label), datasets: [{ data: equity.map((p) => p.value), borderColor: "#3B82F6", backgroundColor: "rgba(59,130,246,.14)", fill: true, tension: .36, pointRadius: 2 }] },
-    options: baseOptions(false, true),
-  });
+  renderTradingEquityChart(equity);
   chart("dailyChart", {
     type: "bar",
     data: { labels: daily.map((p) => p.label), datasets: [{ data: daily.map((p) => p.value), backgroundColor: daily.map((p) => p.value >= 0 ? "rgba(16,185,129,.76)" : "rgba(239,68,68,.76)"), borderRadius: 5 }] },
@@ -1997,6 +2198,14 @@ function bindEvents() {
   });
   qs("#menuToggle").addEventListener("click", () => qs(".sidebar").classList.toggle("open"));
   qsa(".nav-btn").forEach((button) => button.addEventListener("click", () => setPage(button.dataset.page)));
+  qsa("[data-equity-range]").forEach((button) => {
+    button.addEventListener("click", () => {
+      qsa("[data-equity-range]").forEach((b) => b.classList.remove("active"));
+      button.classList.add("active");
+      state.equityRange = button.dataset.equityRange;
+      renderCharts();
+    });
+  });
   qsa("[data-jump]").forEach((button) => button.addEventListener("click", () => setPage(button.dataset.jump)));
   qsa("[data-template-pair]").forEach((button) => {
     button.addEventListener("click", () => {
