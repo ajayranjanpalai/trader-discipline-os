@@ -23,59 +23,66 @@ from services.noon_task_scheduler import start_noon_task_email_scheduler
 
 
 def ensure_task_columns():
-    inspector = inspect(db.engine)
-    if "tasks" not in inspector.get_table_names():
-        return
-    columns = {col["name"] for col in inspector.get_columns("tasks")}
-    with db.engine.begin() as connection:
-        if "task_scope" not in columns:
-            connection.execute(text("ALTER TABLE tasks ADD COLUMN task_scope VARCHAR(20) DEFAULT 'today'"))
-        if "due_date" not in columns:
-            connection.execute(text("ALTER TABLE tasks ADD COLUMN due_date DATE"))
+    try:
+        inspector = inspect(db.engine)
+        if "tasks" not in inspector.get_table_names():
+            return
+        columns = {col["name"] for col in inspector.get_columns("tasks")}
+        with db.engine.begin() as connection:
+            if "task_scope" not in columns:
+                connection.execute(text("ALTER TABLE tasks ADD COLUMN task_scope VARCHAR(20) DEFAULT 'today'"))
+            if "due_date" not in columns:
+                connection.execute(text("ALTER TABLE tasks ADD COLUMN due_date DATE"))
+    except Exception as e:
+        print(f"Task migration notice: {e}")
 
 
 def ensure_trade_columns():
-    inspector = inspect(db.engine)
-    if "trades" not in inspector.get_table_names():
-        return
-    columns = {col["name"] for col in inspector.get_columns("trades")}
-    with db.engine.begin() as connection:
-        if "brokerage" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN brokerage FLOAT DEFAULT 0"))
-        if "closed_quantity" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN closed_quantity FLOAT DEFAULT 0"))
-        if "remaining_quantity" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_quantity FLOAT DEFAULT 0"))
-        if "remaining_exit" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_exit FLOAT DEFAULT 0"))
-        if "tags" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN tags VARCHAR(255) DEFAULT ''"))
-        if "is_bookmarked" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN is_bookmarked BOOLEAN DEFAULT 0"))
-        if "bookmark_label" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN bookmark_label VARCHAR(100) DEFAULT ''"))
-        if "is_best_trade" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN is_best_trade BOOLEAN DEFAULT 0"))
-        if "is_worst_trade" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN is_worst_trade BOOLEAN DEFAULT 0"))
-        if "screenshot_url" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN screenshot_url TEXT DEFAULT ''"))
-        if "before_img" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN before_img TEXT DEFAULT ''"))
-        if "during_img" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN during_img TEXT DEFAULT ''"))
-        if "exit_img" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN exit_img TEXT DEFAULT ''"))
-        if "is_favorite" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN is_favorite BOOLEAN DEFAULT 0"))
-        if "strategy_version" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN strategy_version VARCHAR(100) DEFAULT ''"))
-        if "duration_type" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN duration_type VARCHAR(40) DEFAULT 'Intraday'"))
-        if "holding_time_minutes" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN holding_time_minutes FLOAT DEFAULT 0"))
-        if "custom_fields_json" not in columns:
-            connection.execute(text("ALTER TABLE trades ADD COLUMN custom_fields_json TEXT DEFAULT '{}'"))
+    try:
+        inspector = inspect(db.engine)
+        if "trades" not in inspector.get_table_names():
+            return
+        columns = {col["name"] for col in inspector.get_columns("trades")}
+        with db.engine.begin() as connection:
+            if "brokerage" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN brokerage FLOAT DEFAULT 0"))
+            if "closed_quantity" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN closed_quantity FLOAT DEFAULT 0"))
+            if "remaining_quantity" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_quantity FLOAT DEFAULT 0"))
+            if "remaining_exit" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_exit FLOAT DEFAULT 0"))
+            if "tags" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN tags VARCHAR(255) DEFAULT ''"))
+            if "is_bookmarked" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN is_bookmarked BOOLEAN DEFAULT FALSE"))
+            if "bookmark_label" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN bookmark_label VARCHAR(100) DEFAULT ''"))
+            if "is_best_trade" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN is_best_trade BOOLEAN DEFAULT FALSE"))
+            if "is_worst_trade" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN is_worst_trade BOOLEAN DEFAULT FALSE"))
+            if "screenshot_url" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN screenshot_url TEXT DEFAULT ''"))
+            if "before_img" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN before_img TEXT DEFAULT ''"))
+            if "during_img" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN during_img TEXT DEFAULT ''"))
+            if "exit_img" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN exit_img TEXT DEFAULT ''"))
+            if "is_favorite" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE"))
+            if "strategy_version" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN strategy_version VARCHAR(100) DEFAULT ''"))
+            if "duration_type" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN duration_type VARCHAR(40) DEFAULT 'Intraday'"))
+            if "holding_time_minutes" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN holding_time_minutes FLOAT DEFAULT 0"))
+            if "custom_fields_json" not in columns:
+                connection.execute(text("ALTER TABLE trades ADD COLUMN custom_fields_json TEXT DEFAULT '{}'"))
+    except Exception as e:
+        print(f"Trade migration notice: {e}")
+
 
 
 def create_app():
