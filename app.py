@@ -14,6 +14,11 @@ from routes.tasks import tasks_bp
 from routes.analytics import analytics_bp
 from routes.capital import capital_bp
 from routes.insights import insights_bp
+from routes.extended_api import extended_api_bp
+from routes.heatmap import heatmap_bp
+from routes.gallery import gallery_bp
+from routes.milestone import milestone_bp
+from routes.reports import reports_bp
 from services.noon_task_scheduler import start_noon_task_email_scheduler
 
 
@@ -43,6 +48,34 @@ def ensure_trade_columns():
             connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_quantity FLOAT DEFAULT 0"))
         if "remaining_exit" not in columns:
             connection.execute(text("ALTER TABLE trades ADD COLUMN remaining_exit FLOAT DEFAULT 0"))
+        if "tags" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN tags VARCHAR(255) DEFAULT ''"))
+        if "is_bookmarked" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN is_bookmarked BOOLEAN DEFAULT 0"))
+        if "bookmark_label" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN bookmark_label VARCHAR(100) DEFAULT ''"))
+        if "is_best_trade" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN is_best_trade BOOLEAN DEFAULT 0"))
+        if "is_worst_trade" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN is_worst_trade BOOLEAN DEFAULT 0"))
+        if "screenshot_url" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN screenshot_url TEXT DEFAULT ''"))
+        if "before_img" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN before_img TEXT DEFAULT ''"))
+        if "during_img" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN during_img TEXT DEFAULT ''"))
+        if "exit_img" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN exit_img TEXT DEFAULT ''"))
+        if "is_favorite" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN is_favorite BOOLEAN DEFAULT 0"))
+        if "strategy_version" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN strategy_version VARCHAR(100) DEFAULT ''"))
+        if "duration_type" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN duration_type VARCHAR(40) DEFAULT 'Intraday'"))
+        if "holding_time_minutes" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN holding_time_minutes FLOAT DEFAULT 0"))
+        if "custom_fields_json" not in columns:
+            connection.execute(text("ALTER TABLE trades ADD COLUMN custom_fields_json TEXT DEFAULT '{}'"))
 
 
 def create_app():
@@ -59,6 +92,13 @@ def create_app():
     app.register_blueprint(analytics_bp, url_prefix="/api/analytics")
     app.register_blueprint(capital_bp, url_prefix="/api/capital")
     app.register_blueprint(insights_bp, url_prefix="/api/insights")
+    app.register_blueprint(extended_api_bp, url_prefix="/api/os")
+    app.register_blueprint(heatmap_bp, url_prefix="/api/heatmap")
+    app.register_blueprint(gallery_bp, url_prefix="/api/gallery")
+    app.register_blueprint(milestone_bp, url_prefix="/api/milestones")
+    app.register_blueprint(reports_bp, url_prefix="/api/reports")
+
+
 
     @app.route("/")
     def index():

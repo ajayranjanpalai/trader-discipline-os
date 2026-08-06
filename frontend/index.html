@@ -54,10 +54,16 @@
         <button class="nav-btn" data-page="journal" title="Trade Journal"><i data-lucide="candlestick-chart"></i><span>Trade Journal</span></button>
         <button class="nav-btn" data-page="risk" title="Risk Desk"><i data-lucide="shield-check"></i><span>Risk Desk</span></button>
         <button class="nav-btn" data-page="analytics" title="Analytics"><i data-lucide="bar-chart-3"></i><span>Analytics</span></button>
+        <button class="nav-btn" data-page="heatmap" title="Trading Heatmap"><i data-lucide="grid"></i><span>Trading Heatmap</span></button>
+        <button class="nav-btn" data-page="gallery" title="Trade Gallery"><i data-lucide="bookmark"></i><span>Trade Gallery</span></button>
+        <button class="nav-btn" data-page="milestones" title="Milestones"><i data-lucide="trophy"></i><span>Milestones & Badges</span></button>
+        <button class="nav-btn" data-page="reports" title="Reports & Export"><i data-lucide="file-text"></i><span>Reports & Export</span></button>
         <button class="nav-btn" data-page="expenses" title="Expenses"><i data-lucide="wallet-cards"></i><span>Expenses</span></button>
         <button class="nav-btn" data-page="tasks" title="Tasks"><i data-lucide="list-checks"></i><span>Tasks</span></button>
         <button class="nav-btn" data-page="insights" title="AI Insights"><i data-lucide="sparkles"></i><span>AI Insights</span></button>
       </nav>
+
+
       <div class="sidebar-user">
         <div id="avatar" class="avatar">T</div>
         <div>
@@ -77,6 +83,13 @@
           <p id="pageSubtitle" class="page-subtitle">Stay disciplined. Stay profitable.</p>
         </div>
         <div class="top-actions">
+          <button id="openCommandPaletteBtn" class="cmd-palette-btn" type="button" title="Command Palette (Ctrl + K)"><span>Ctrl + K</span></button>
+          <select id="themeSelector" class="theme-select" title="Theme Switcher">
+            <option value="dark">🌙 Dark Theme</option>
+            <option value="light">☀️ Light Theme</option>
+            <option value="trading-green">💹 Trading Green</option>
+            <option value="midnight-blue">🌌 Midnight Blue</option>
+          </select>
           <div id="ticker" class="ticker"></div>
           <div class="discipline-pill">
             <span>Discipline</span>
@@ -86,7 +99,12 @@
       </header>
 
       <section id="dashboard" class="page active">
+        <div id="dailyQuoteBanner" class="quote-banner">
+          <span id="quoteText" class="quote-text">"Plan your trade and trade your plan."</span>
+          <small id="quoteAuthor" class="quote-author">— Richard Dennis</small>
+        </div>
         <div id="disciplineAlert" class="alert"></div>
+
         <div class="metric-grid">
           <article class="metric-card"><span>Total P/L</span><strong id="mPnl">0</strong><small>Net journal result</small></article>
           <article class="metric-card"><span>Win Rate</span><strong id="mWinRate">0%</strong><small>Execution quality</small></article>
@@ -196,10 +214,26 @@
                 <label>Risk Reward (Auto)<input name="risk_reward" type="number" step="0.01" required></label>
                 <label>Emotion<select name="emotion"><option>calm</option><option>confident</option><option>neutral</option><option>fomo</option><option>fearful</option><option>greedy</option><option>revenge</option></select></label>
                 <label>Setup Tag<select name="setup_tag" id="setupTag"><option value="">No setup tag</option></select></label>
+                <label>Strategy Version<input name="strategy_version" placeholder="EMA Pullback v2"></label>
+                <label>Duration Type<select name="duration_type"><option value="Scalp">Scalp</option><option value="Intraday" selected>Intraday</option><option value="Swing">Swing</option><option value="Position">Position</option></select></label>
+                <label>Holding Time (Mins)<input name="holding_time_minutes" type="number" step="1" placeholder="15"></label>
+                <label>Tags (#tag)<input name="tags" placeholder="#FOMO, #Breakout, #News"></label>
+                <label>🖼️ Before Entry Screenshot<input name="before_img" placeholder="https://tradingview.com/x/before..."></label>
+                <label>🖼️ During Trade Screenshot<input name="during_img" placeholder="https://tradingview.com/x/during..."></label>
+                <label>🖼️ Exit Screenshot<input name="exit_img" placeholder="https://tradingview.com/x/exit..."></label>
                 <label>Timestamp<input name="timestamp" type="datetime-local"></label>
               </div>
+
               <label>Trade Reason<input name="trade_reason" placeholder="Breakout, pullback, liquidity sweep..."></label>
               <label>Notes<textarea name="notes" rows="3" placeholder="Execution notes, mistakes, lessons"></textarea></label>
+              <div class="form-grid compact-fields">
+                <label><input type="checkbox" name="is_bookmarked"> ⭐ Bookmark Trade</label>
+                <label>Bookmark Label<input name="bookmark_label" placeholder="⭐ Excellent Entry"></label>
+                <label><input type="checkbox" name="is_best_trade"> 🏆 Best Trade Gallery</label>
+                <label><input type="checkbox" name="is_worst_trade"> ⚠️ Worst Trade Gallery</label>
+              </div>
+              <label>Custom Fields JSON<input name="custom_fields_json" placeholder='{"Exchange":"Binance","Broker":"Zerodha","Leverage":"10x"}'></label>
+
               <div class="risk-preview">
                 <span>Position Risk (USD x 85)</span>
                 <strong id="positionRisk">INR 0</strong>
@@ -442,10 +476,114 @@
         </section>
         <div id="insightGrid" class="insight-grid"></div>
       </section>
+
+      <!-- 1. 📈 Trading Heatmap & Statistics -->
+      <section id="heatmap" class="page">
+        <div class="analytics-grid">
+          <section class="panel wide">
+            <div class="panel-head"><h3>🔥 Performance Heatmap Matrix</h3><span>Color-Coded Profit/Loss Days (🟩 Profit, 🟥 Loss, 🟨 Break-even)</span></div>
+            <div id="heatmapGrid" class="heatmap-container"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>⏱️ Day-of-Week & Time Statistics</h3><span>Mon - Fri & Time-of-Day Win Rate</span></div>
+            <div id="durationStats" class="stack"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 2. 🖼️ Trade Gallery & Learning Library -->
+      <section id="gallery" class="page">
+        <div class="panel-head"><h3>🖼️ Multi-Stage Trade Gallery & Library</h3><span>Before Entry, During Trade, & Exit Screenshots</span></div>
+        <div class="dashboard-grid margin-top">
+          <section class="panel">
+            <div class="panel-head"><h3>⭐ Favorite Trades Collection</h3></div>
+            <div id="bookmarkedTradesList" class="stack"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>🏆 Best Trades Gallery</h3></div>
+            <div id="bestTradesList" class="stack"></div>
+          </section>
+          <section class="panel">
+            <div class="panel-head"><h3>⚠️ Worst Trades Gallery</h3></div>
+            <div id="worstTradesList" class="stack"></div>
+          </section>
+        </div>
+      </section>
+
+      <!-- 3. 🏆 Milestones & Achievement System -->
+      <section id="milestones" class="page">
+        <section class="panel wide">
+          <div class="panel-head"><h3>🏆 Milestones & Achievements System</h3><span>Consistency & Discipline Tracker</span></div>
+          <div id="milestoneBadgesGrid" class="milestone-grid"></div>
+        </section>
+      </section>
+
+      <!-- 4. 📑 Advanced Reports & Export Center -->
+      <section id="reports" class="page">
+        <div class="split-grid">
+          <section class="panel form-panel">
+            <h3>📑 Performance Summary Report</h3>
+            <p>Generate Daily, Weekly, Monthly, and Yearly Performance & Discipline summaries.</p>
+            <div class="template-row margin-top">
+              <button class="chip-btn" type="button" id="btnReportDaily">Daily Report</button>
+              <button class="chip-btn" type="button" id="btnReportWeekly">Weekly Report</button>
+              <button class="chip-btn" type="button" id="btnReportMonthly">Monthly Report</button>
+              <button class="chip-btn" type="button" id="btnReportYearly">Yearly Report</button>
+            </div>
+            <div id="weeklyReportContainer" class="report-box margin-top"></div>
+          </section>
+          <section class="panel form-panel">
+            <h3>📥 Export Center</h3>
+            <p>Export your full trading journal and analytics to PDF, Excel, or CSV.</p>
+            <div class="stack margin-top">
+              <button id="btnExportPDF" class="primary-btn" type="button">📄 Export to PDF</button>
+              <a href="/api/reports/export/csv" download="trading_journal_export.csv" class="primary-btn" style="text-decoration:none; text-align:center;">📊 Export to CSV / Excel</a>
+            </div>
+          </section>
+        </div>
+      </section>
+
+
     </main>
+  </div>
+
+  <!-- Command Palette Modal (Ctrl + K) -->
+  <div id="commandPaletteModal" class="modal-backdrop hidden">
+    <div class="cmd-palette">
+      <div class="cmd-input-wrap">
+        <i data-lucide="terminal"></i>
+        <input id="cmdInput" type="text" placeholder="Type a command or search trades... (Press ESC to exit)">
+      </div>
+      <div id="cmdResults" class="cmd-results">
+        <div class="cmd-item" data-action="new-trade">➕ New Trade Entry</div>
+        <div class="cmd-item" data-action="search-trades">🔍 Deep Search Engine</div>
+        <div class="cmd-item" data-action="view-analytics">📊 View Analytics</div>
+        <div class="cmd-item" data-action="view-heatmap">🔥 View Heatmap & Duration</div>
+        <div class="cmd-item" data-action="daily-diary">📖 Daily Trading Diary</div>
+        <div class="cmd-item" data-action="open-watchlist">🔖 Watchlist Manager</div>
+        <div class="cmd-item" data-action="milestones">🏆 Milestones & Achievements</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trade Timeline Event Modal -->
+  <div id="timelineModal" class="modal-backdrop hidden">
+    <div class="cmd-palette timeline-dialog">
+      <div class="panel-head">
+        <h3 id="timelineTitle">Trade Timeline</h3>
+        <button id="closeTimelineBtn" class="mini-btn" type="button">Close</button>
+      </div>
+      <div id="timelineEventsList" class="stack timeline-stack"></div>
+      <form id="timelineAddForm" class="compact-form margin-top">
+        <input name="action" placeholder="Action (e.g. Stop Loss Modified to BE)" required>
+        <input name="notes" placeholder="Optional notes">
+        <button class="primary-btn" type="submit">Add Action Event</button>
+      </form>
+    </div>
   </div>
 
   <div id="toastHost" class="toast-host"></div>
   <script src="app.js?v=data-sync-v4"></script>
 </body>
 </html>
+

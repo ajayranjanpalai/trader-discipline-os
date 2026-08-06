@@ -54,8 +54,24 @@ def _trade_fields(data):
         "emotion": str(data["emotion"]).lower(),
         "trade_reason": data.get("trade_reason", ""),
         "notes": data.get("notes", ""),
+        "tags": data.get("tags", ""),
+        "is_bookmarked": bool(data.get("is_bookmarked", False)),
+        "bookmark_label": data.get("bookmark_label", ""),
+        "is_best_trade": bool(data.get("is_best_trade", False)),
+        "is_worst_trade": bool(data.get("is_worst_trade", False)),
+        "screenshot_url": data.get("screenshot_url", ""),
+        "before_img": data.get("before_img", ""),
+        "during_img": data.get("during_img", ""),
+        "exit_img": data.get("exit_img", ""),
+        "is_favorite": bool(data.get("is_favorite", False)),
+        "strategy_version": data.get("strategy_version", ""),
+        "duration_type": data.get("duration_type", "Intraday"),
+        "holding_time_minutes": float(data.get("holding_time_minutes") or 0.0),
+        "custom_fields_json": data.get("custom_fields_json", "{}"),
         "timestamp": _parse_time(data.get("timestamp")),
     }
+
+
 
 
 @trades_bp.get("")

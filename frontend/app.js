@@ -110,7 +110,16 @@ const fallbackIcons = {
   "wallet-cards": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16v13H4z"/><path d="M4 10h16M7 5h11v2"/></svg>',
   "list-checks": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 7 2 2 4-4M12 8h8M4 15l2 2 4-4M12 16h8"/></svg>',
   sparkles: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.7 5.3L19 10l-5.3 1.7L12 17l-1.7-5.3L5 10l5.3-1.7L12 3ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15ZM5 15l.8 2.2L8 18l-2.2.8L5 21l-.8-2.2L2 18l2.2-.8L5 15Z"/></svg>',
+  grid: '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>',
+  sliders: '<svg viewBox="0 0 24 24" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>',
+  bookmark: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/></svg>',
+  "book-open": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+  trophy: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"/><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/></svg>',
+  "graduation-cap": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>',
+  "file-text": '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/></svg>',
+  terminal: '<svg viewBox="0 0 24 24" aria-hidden="true"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>',
 };
+
 const setupPrefix = /^\[Setup:\s*([^\]]+)\]\s*/i;
 const localDateKey = (value = new Date()) => {
   const date = new Date(value);
@@ -2379,6 +2388,255 @@ function bindEvents() {
   tradeForm.addEventListener("change", refreshTradeMath);
   refreshTradeMath();
   updateTaskDueDateControl();
+
+  // --- Extended Features Initialization ---
+  applyTheme();
+  loadDailyQuote();
+  setupCommandPaletteAndShortcuts();
+
+  qs("#themeSelector")?.addEventListener("change", (e) => applyTheme(e.target.value));
+
+  // Forms submit listeners for extended features
+  qs("#setupBuilderForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = formData(e.target);
+    data.conditions = data.conditions ? data.conditions.split(",").map(c => c.trim()) : [];
+    await api("/os/setups", "POST", data);
+    toast("Setup template saved!", "success");
+    e.target.reset();
+    loadSetupsAndRules();
+  });
+
+  qs("#ruleBuilderForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/rules", "POST", formData(e.target));
+    toast("Custom rule saved!", "success");
+    e.target.reset();
+    loadSetupsAndRules();
+  });
+
+  qs("#replayForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/market-replay", "POST", formData(e.target));
+    toast("Market replay note logged!", "success");
+    e.target.reset();
+    loadWatchlistAndReplay();
+  });
+
+  qs("#watchlistForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/watchlist", "POST", formData(e.target));
+    toast("Added to Watchlist!", "success");
+    e.target.reset();
+    loadWatchlistAndReplay();
+  });
+
+  qs("#eventForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/economic-events", "POST", formData(e.target));
+    toast("Economic event logged!", "success");
+    e.target.reset();
+    loadWatchlistAndReplay();
+  });
+
+  qs("#diaryForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/diary", "POST", formData(e.target));
+    toast("Daily diary saved!", "success");
+    e.target.reset();
+    loadDiaryAndSession();
+  });
+
+  qs("#sessionNoteForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/session-notes", "POST", formData(e.target));
+    toast("Session note saved!", "success");
+    e.target.reset();
+    loadDiaryAndSession();
+  });
+
+  qs("#learningForm")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    await api("/os/learning", "POST", formData(e.target));
+    toast("Learning resource added!", "success");
+    e.target.reset();
+    loadLearningHub();
+  });
+
+  qs("#generateWeeklyBtn")?.addEventListener("click", generateWeeklyReport);
+  qs("#generateMonthlyBtn")?.addEventListener("click", generateMonthlyReport);
+}
+
+// --- Theme Switcher ---
+function applyTheme(themeName) {
+  if (!themeName) themeName = localStorage.getItem("tdos_theme") || "dark";
+  document.documentElement.setAttribute("data-theme", themeName);
+  localStorage.setItem("tdos_theme", themeName);
+  const selector = qs("#themeSelector");
+  if (selector) selector.value = themeName;
+}
+
+// --- Daily Quote ---
+async function loadDailyQuote() {
+  try {
+    const q = await api("/os/quotes/daily");
+    if (qs("#quoteText")) qs("#quoteText").textContent = `"${q.quote}"`;
+    if (qs("#quoteAuthor")) qs("#quoteAuthor").textContent = `— ${q.author}`;
+  } catch (e) {
+    console.error("Quote load error", e);
+  }
+}
+
+// --- Command Palette & Keyboard Shortcuts ---
+function setupCommandPaletteAndShortcuts() {
+  const modal = qs("#commandPaletteModal");
+  const input = qs("#cmdInput");
+  if (!modal || !input) return;
+
+  function openCmd() { modal.classList.remove("hidden"); input.focus(); }
+  function closeCmd() { modal.classList.add("hidden"); }
+
+  qs("#openCommandPaletteBtn")?.addEventListener("click", openCmd);
+
+  document.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+      e.preventDefault();
+      openCmd();
+    }
+    if (e.key === "Escape") closeCmd();
+
+    if (!modal.classList.contains("hidden")) return;
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+
+    const key = e.key.toLowerCase();
+    if (key === "n") { e.preventDefault(); switchPage("journal"); }
+    if (key === "a") { e.preventDefault(); switchPage("analytics"); }
+    if (key === "t") { e.preventDefault(); switchPage("tasks"); }
+    if (key === "s") { e.preventDefault(); openCmd(); }
+  });
+
+  qs("#cmdResults")?.addEventListener("click", (e) => {
+    const item = e.target.closest(".cmd-item");
+    if (!item) return;
+    const act = item.dataset.action;
+    closeCmd();
+    if (act === "new-trade") switchPage("journal");
+    else if (act === "view-analytics") switchPage("analytics");
+    else if (act === "view-heatmap") { switchPage("heatmap"); loadHeatmapAndStats(); }
+    else if (act === "open-gallery") { switchPage("gallery"); loadGalleryAndLibrary(); }
+    else if (act === "milestones") { switchPage("milestones"); loadMilestonesAndBadges(); }
+    else if (act === "view-reports") { switchPage("reports"); loadReportsAndExports(); }
+  });
+}
+
+// --- Data Loaders for 4 Core Modules ---
+
+// Module 1: 📈 Trading Heatmap & Statistics
+async function loadHeatmapAndStats() {
+  try {
+    const matrix = await api("/heatmap/matrix");
+    const grid = qs("#heatmapGrid");
+    if (grid) {
+      grid.innerHTML = matrix.map(h => `
+        <div class="heatmap-card ${h.status}">
+          <strong>${h.symbol}</strong>
+          <div>Net PnL: ₹${h.pnl}</div>
+          <small>Win Rate: ${h.win_rate}% (${h.trades} trades)</small>
+        </div>
+      `).join("") || "<p>No trade data for heatmap matrix yet.</p>";
+    }
+
+    const dayTime = await api("/heatmap/day-time");
+    const durStats = qs("#durationStats");
+    if (durStats && dayTime.day_of_week) {
+      durStats.innerHTML = Object.entries(dayTime.day_of_week).map(([day, s]) => `
+        <div class="panel-row">
+          <strong>${day}</strong>
+          <span>${s.trades} trades | PnL: ₹${round(s.pnl, 2)}</span>
+        </div>
+      `).join("");
+    }
+  } catch (e) { console.error("Heatmap load error", e); }
+}
+
+// Module 2: 🖼️ Trade Gallery & Learning Library
+async function loadGalleryAndLibrary() {
+  try {
+    const trades = await api("/gallery/trades");
+    const favoriteList = qs("#bookmarkedTradesList");
+    const bestList = qs("#bestTradesList");
+    const worstList = qs("#worstTradesList");
+
+    const favs = trades.filter(t => t.is_favorite || t.is_bookmarked);
+    const best = trades.filter(t => t.is_best_trade || t.pnl > 0);
+    const worst = trades.filter(t => t.is_worst_trade || t.pnl < 0);
+
+    if (favoriteList) {
+      favoriteList.innerHTML = favs.map(t => `
+        <div class="panel-row">
+          <div>⭐ <strong>${t.pair}</strong> (${t.direction}) | Net PnL: ₹${round(t.pnl * 85, 2)}</div>
+          ${t.before_img ? `<small>Before: <a href="${t.before_img}" target="_blank">Chart Link</a></small>` : ''}
+        </div>
+      `).join("") || "<p>No favorite trades yet.</p>";
+    }
+
+    if (bestList) {
+      bestList.innerHTML = best.slice(0, 5).map(t => `
+        <div class="panel-row">
+          <div>🏆 <strong>${t.pair}</strong> (${t.direction}) | Net PnL: ₹${round(t.pnl * 85, 2)}</div>
+          ${t.exit_img ? `<small>Exit Chart: <a href="${t.exit_img}" target="_blank">View Chart</a></small>` : ''}
+        </div>
+      `).join("") || "<p>No best trades logged yet.</p>";
+    }
+
+    if (worstList) {
+      worstList.innerHTML = worst.slice(0, 5).map(t => `
+        <div class="panel-row">
+          <div>⚠️ <strong>${t.pair}</strong> (${t.direction}) | Net PnL: ₹${round(t.pnl * 85, 2)}</div>
+          ${t.during_img ? `<small>During Chart: <a href="${t.during_img}" target="_blank">View Chart</a></small>` : ''}
+        </div>
+      `).join("") || "<p>No worst trades logged yet.</p>";
+    }
+  } catch (e) { console.error("Gallery load error", e); }
+}
+
+// Module 3: 🏆 Milestones & Achievement System
+async function loadMilestonesAndBadges() {
+  try {
+    const milestones = await api("/milestones");
+    const grid = qs("#milestoneBadgesGrid");
+    if (grid) {
+      grid.innerHTML = milestones.map(m => `
+        <div class="milestone-card ${m.unlocked ? 'unlocked' : ''}">
+          <strong>${m.icon || (m.unlocked ? '🏆' : '🔒')} ${m.title}</strong>
+          <small>${m.description}</small>
+          <div class="milestone-bar"><div class="milestone-progress" style="width:${m.progress_pct}%"></div></div>
+          <small>${m.current} / ${m.target} (${m.progress_pct}%)</small>
+        </div>
+      `).join("");
+    }
+  } catch (e) { console.error("Milestones load error", e); }
+}
+
+// Module 4: 📑 Advanced Reports & Export Center
+async function loadReportsAndExports(period = "monthly") {
+  try {
+    const r = await api(`/reports/summary?period=${period}`);
+    const box = qs("#weeklyReportContainer");
+    if (box) {
+      box.innerHTML = `
+        <h4>${r.period} Performance Summary</h4>
+        <p>User: <strong>${r.user_name}</strong></p>
+        <p>Total Trades: <strong>${r.total_trades}</strong></p>
+        <p>Win Rate: <strong>${r.win_rate}%</strong></p>
+        <p>Net Profit: <strong style="color:${r.profit >= 0 ? 'var(--green)' : 'var(--red)'}">₹${r.profit}</strong></p>
+        <p>Profit Factor: <strong>${r.profit_factor}</strong></p>
+        <p>Best Setup: <strong>${r.best_setup}</strong></p>
+        <p>Expenses: <strong>₹${r.total_expenses}</strong> | Net Yield: <strong>₹${r.net_yield}</strong></p>
+        <div class="quote-banner margin-top"><span class="quote-text">🤖 AI Suggestion: ${r.ai_suggestion}</span></div>
+      `;
+    }
+  } catch (e) { console.error("Reports load error", e); }
 }
 
 async function bootstrap() {
@@ -2399,6 +2657,19 @@ async function bootstrap() {
     state.user = data.user;
     localStorage.setItem("tdos_user", JSON.stringify(data.user));
     showApp();
+
+    // Trigger initial loading of 4 core modules
+    loadHeatmapAndStats();
+    loadGalleryAndLibrary();
+    loadMilestonesAndBadges();
+    loadReportsAndExports("monthly");
+
+    // Report period listeners
+    qs("#btnReportDaily")?.addEventListener("click", () => loadReportsAndExports("daily"));
+    qs("#btnReportWeekly")?.addEventListener("click", () => loadReportsAndExports("weekly"));
+    qs("#btnReportMonthly")?.addEventListener("click", () => loadReportsAndExports("monthly"));
+    qs("#btnReportYearly")?.addEventListener("click", () => loadReportsAndExports("yearly"));
+    qs("#btnExportPDF")?.addEventListener("click", () => window.print());
   } catch (error) {
     if (isOfflineError(error) && state.user) {
       showApp();
@@ -2411,3 +2682,5 @@ async function bootstrap() {
 }
 
 bootstrap();
+
+

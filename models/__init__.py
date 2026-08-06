@@ -12,3 +12,16 @@ from .task_completion import TaskCompletion  # noqa: E402,F401
 from .task_email_log import TaskEmailLog  # noqa: E402,F401
 from .discipline_log import DisciplineLog  # noqa: E402,F401
 from .ai_insight import AIInsight  # noqa: E402,F401
+from .extended_features import (  # noqa: E402,F401
+    TradeTimelineEvent,
+    MarketReplayNote,
+    WatchlistItem,
+    TradingSetup,
+    TradingRule,
+    DailyDiary,
+    SessionNote,
+    EconomicEvent,
+    LearningResource,
+    TradingMilestone,
+)
+

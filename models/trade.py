@@ -23,6 +23,20 @@ class Trade(db.Model):
     emotion = db.Column(db.String(40), nullable=False)
     trade_reason = db.Column(db.String(255), default="")
     notes = db.Column(db.Text, default="")
+    tags = db.Column(db.String(255), default="")
+    is_bookmarked = db.Column(db.Boolean, default=False)
+    bookmark_label = db.Column(db.String(100), default="")
+    is_best_trade = db.Column(db.Boolean, default=False)
+    is_worst_trade = db.Column(db.Boolean, default=False)
+    screenshot_url = db.Column(db.Text, default="")
+    before_img = db.Column(db.Text, default="")
+    during_img = db.Column(db.Text, default="")
+    exit_img = db.Column(db.Text, default="")
+    is_favorite = db.Column(db.Boolean, default=False)
+    strategy_version = db.Column(db.String(100), default="")
+    duration_type = db.Column(db.String(40), default="Intraday")
+    holding_time_minutes = db.Column(db.Float, default=0.0)
+    custom_fields_json = db.Column(db.Text, default="{}")
     timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -45,6 +59,22 @@ class Trade(db.Model):
             "emotion": self.emotion,
             "trade_reason": self.trade_reason,
             "notes": self.notes,
+            "tags": self.tags or "",
+            "is_bookmarked": bool(self.is_bookmarked),
+            "bookmark_label": self.bookmark_label or "",
+            "is_best_trade": bool(self.is_best_trade),
+            "is_worst_trade": bool(self.is_worst_trade),
+            "screenshot_url": self.screenshot_url or "",
+            "before_img": self.before_img or "",
+            "during_img": self.during_img or "",
+            "exit_img": self.exit_img or "",
+            "is_favorite": bool(self.is_favorite),
+            "strategy_version": self.strategy_version or "",
+            "duration_type": self.duration_type or "Intraday",
+            "holding_time_minutes": self.holding_time_minutes or 0.0,
+            "custom_fields_json": self.custom_fields_json or "{}",
             "timestamp": self.timestamp.isoformat(),
             "created_at": self.created_at.isoformat(),
         }
+
+
