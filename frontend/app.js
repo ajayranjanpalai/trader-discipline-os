@@ -2392,9 +2392,9 @@ function bindEvents() {
   // --- Extended Features Initialization ---
   applyTheme();
   loadDailyQuote();
-  setupCommandPaletteAndShortcuts();
 
   qs("#themeSelector")?.addEventListener("change", (e) => applyTheme(e.target.value));
+
 
   // Forms submit listeners for extended features
   qs("#setupBuilderForm")?.addEventListener("submit", async (e) => {
@@ -2487,47 +2487,7 @@ async function loadDailyQuote() {
   }
 }
 
-// --- Command Palette & Keyboard Shortcuts ---
-function setupCommandPaletteAndShortcuts() {
-  const modal = qs("#commandPaletteModal");
-  const input = qs("#cmdInput");
-  if (!modal || !input) return;
 
-  function openCmd() { modal.classList.remove("hidden"); input.focus(); }
-  function closeCmd() { modal.classList.add("hidden"); }
-
-  qs("#openCommandPaletteBtn")?.addEventListener("click", openCmd);
-
-  document.addEventListener("keydown", (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
-      e.preventDefault();
-      openCmd();
-    }
-    if (e.key === "Escape") closeCmd();
-
-    if (!modal.classList.contains("hidden")) return;
-    if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
-
-    const key = e.key.toLowerCase();
-    if (key === "n") { e.preventDefault(); switchPage("journal"); }
-    if (key === "a") { e.preventDefault(); switchPage("analytics"); }
-    if (key === "t") { e.preventDefault(); switchPage("tasks"); }
-    if (key === "s") { e.preventDefault(); openCmd(); }
-  });
-
-  qs("#cmdResults")?.addEventListener("click", (e) => {
-    const item = e.target.closest(".cmd-item");
-    if (!item) return;
-    const act = item.dataset.action;
-    closeCmd();
-    if (act === "new-trade") switchPage("journal");
-    else if (act === "view-analytics") switchPage("analytics");
-    else if (act === "view-heatmap") { switchPage("heatmap"); loadHeatmapAndStats(); }
-    else if (act === "open-gallery") { switchPage("gallery"); loadGalleryAndLibrary(); }
-    else if (act === "milestones") { switchPage("milestones"); loadMilestonesAndBadges(); }
-    else if (act === "view-reports") { switchPage("reports"); loadReportsAndExports(); }
-  });
-}
 
 // --- Data Loaders for 4 Core Modules ---
 

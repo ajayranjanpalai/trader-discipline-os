@@ -83,8 +83,8 @@
           <p id="pageSubtitle" class="page-subtitle">Stay disciplined. Stay profitable.</p>
         </div>
         <div class="top-actions">
-          <button id="openCommandPaletteBtn" class="cmd-palette-btn" type="button" title="Command Palette (Ctrl + K)"><span>Ctrl + K</span></button>
           <select id="themeSelector" class="theme-select" title="Theme Switcher">
+
             <option value="dark">🌙 Dark Theme</option>
             <option value="light">☀️ Light Theme</option>
             <option value="trading-green">💹 Trading Green</option>
@@ -547,26 +547,8 @@
     </main>
   </div>
 
-  <!-- Command Palette Modal (Ctrl + K) -->
-  <div id="commandPaletteModal" class="modal-backdrop hidden">
-    <div class="cmd-palette">
-      <div class="cmd-input-wrap">
-        <i data-lucide="terminal"></i>
-        <input id="cmdInput" type="text" placeholder="Type a command or search trades... (Press ESC to exit)">
-      </div>
-      <div id="cmdResults" class="cmd-results">
-        <div class="cmd-item" data-action="new-trade">➕ New Trade Entry</div>
-        <div class="cmd-item" data-action="search-trades">🔍 Deep Search Engine</div>
-        <div class="cmd-item" data-action="view-analytics">📊 View Analytics</div>
-        <div class="cmd-item" data-action="view-heatmap">🔥 View Heatmap & Duration</div>
-        <div class="cmd-item" data-action="daily-diary">📖 Daily Trading Diary</div>
-        <div class="cmd-item" data-action="open-watchlist">🔖 Watchlist Manager</div>
-        <div class="cmd-item" data-action="milestones">🏆 Milestones & Achievements</div>
-      </div>
-    </div>
-  </div>
-
   <!-- Trade Timeline Event Modal -->
+
   <div id="timelineModal" class="modal-backdrop hidden">
     <div class="cmd-palette timeline-dialog">
       <div class="panel-head">
